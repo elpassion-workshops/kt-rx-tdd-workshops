@@ -1,5 +1,6 @@
 package com.elpassion.kt.rx.tdd.workshops
 
+import io.reactivex.Maybe
 import io.reactivex.Single
 
 interface SignUp {
@@ -21,9 +22,20 @@ interface SignUp {
         }
     }
 
-    interface Photo{
-        enum class State {
-            EMPTY,
+    interface Photo {
+        object TakePhotoEvent
+
+        sealed class State {
+            object EMPTY : State()
+            data class Photo(val photoUri: String) : State()
+        }
+
+        interface PermissionRequester {
+            fun request(): Maybe<Unit>
+        }
+
+        interface PhotoRequester {
+            fun request(): Maybe<String>
         }
     }
 }
