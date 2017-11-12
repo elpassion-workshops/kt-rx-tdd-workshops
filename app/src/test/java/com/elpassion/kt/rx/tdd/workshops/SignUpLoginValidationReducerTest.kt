@@ -62,7 +62,7 @@ class SignUpLoginValidationReducerTest {
         state.assertLastValue(State.API_ERROR)
     }
 
-    class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : (Observable<Any>) -> Observable<State> {
+    class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : Reducer<State> {
         override fun invoke(events: Observable<Any>): Observable<State> {
             return events
                     .ofType(LoginChangedEvent::class.java)
