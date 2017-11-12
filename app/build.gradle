@@ -19,7 +19,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.elpassion.kt.rx.tdd.workshops"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -39,6 +39,7 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     implementation "com.android.support:appcompat-v7:$support_version"
+    implementation group: 'com.android.support', name: 'exifinterface', version: support_version
     implementation group: 'io.reactivex.rxjava2', name: 'rxjava', version: rxjava2_version
     implementation group: 'io.reactivex.rxjava2', name: 'rxkotlin', version: '2.1.0'
     implementation group: 'io.reactivex.rxjava2', name: 'rxandroid', version: rx_android_version
@@ -46,11 +47,11 @@ dependencies {
     implementation group: 'com.jakewharton.rxrelay2', name: 'rxrelay', version: '2.0.0'
     implementation group: 'com.trello.rxlifecycle2', name: 'rxlifecycle-components', version: rx_lifecycle_version
     implementation group: 'com.trello.rxlifecycle2', name: 'rxlifecycle-kotlin', version: rx_lifecycle_version
+    implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.4@aar'
 
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'com.nhaarman', name: 'mockito-kotlin-kt1.1', version: mockito_kotlin_version
     testImplementation group: 'com.elpassion.android.commons', name: 'rxjava2-test', version: el_common_version
-    testImplementation 'com.github.elpassion:MiniSpek:master-SNAPSHOT'
 
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
