@@ -15,9 +15,7 @@ class SignUpActivity : RxActivity() {
                 .handleStates()
     }
 
-    private fun events(): Observable<SignUp.Event> {
-        throw RuntimeException()
-    }
+    private fun events(): Observable<Any> = throw RuntimeException()
 
     private fun Observable<SignUp.State>.handleStates() {
         subscribe()
