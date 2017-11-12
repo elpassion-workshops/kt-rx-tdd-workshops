@@ -6,7 +6,6 @@ import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
-import io.reactivex.Observable
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
@@ -62,22 +61,4 @@ class SignUpLoginValidationReducerTest {
         state.assertLastValue(State.API_ERROR)
     }
 
-    class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : Reducer<State> {
-        override fun invoke(events: Observable<Any>): Observable<State> {
-            return events
-                    .ofType(LoginChangedEvent::class.java)
-                    .switchMap {
-                        if (it.login.isEmpty()) {
-                            Observable.just(State.IDLE)
-                        } else {
-                            api.call(it.login)
-                                    .map { if (it) State.LOGIN_OK else State.LOGIN_TAKEN }
-                                    .toObservable()
-                                    .onErrorReturnItem(State.API_ERROR)
-                                    .startWith(State.LOADING)
-                        }
-                    }
-                    .startWith(State.IDLE)
-        }
-    }
 }
