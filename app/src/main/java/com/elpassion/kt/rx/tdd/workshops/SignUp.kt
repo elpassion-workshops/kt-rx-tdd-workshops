@@ -4,7 +4,8 @@ import io.reactivex.Maybe
 import io.reactivex.Single
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(val loginValidation: LoginValidation.State,
+                     val takenPhoto: Photo.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
