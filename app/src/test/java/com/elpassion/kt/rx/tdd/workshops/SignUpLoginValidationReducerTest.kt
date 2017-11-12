@@ -58,6 +58,13 @@ class SignUpLoginValidationReducerTest {
         state.assertLastValue(State.LOGIN_TAKEN)
     }
 
+    @Test
+    fun shouldReturnErrorWhenApiCallFailed() {
+        events.accept(LoginChangedEvent("login"))
+        apiSubject.onError(RuntimeException())
+        state.assertLastValue(State.API_ERROR)
+    }
+
     class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : (Observable<Any>) -> Observable<State> {
         override fun invoke(events: Observable<Any>): Observable<State> {
             return events
@@ -69,6 +76,7 @@ class SignUpLoginValidationReducerTest {
                             api.call(it.login)
                                     .map { if (it) State.LOGIN_OK else State.LOGIN_TAKEN }
                                     .toObservable()
+                                    .onErrorReturnItem(State.API_ERROR)
                                     .startWith(State.LOADING)
                         }
                     }

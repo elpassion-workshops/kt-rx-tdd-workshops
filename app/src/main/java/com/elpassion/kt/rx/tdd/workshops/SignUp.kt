@@ -13,6 +13,7 @@ interface SignUp {
             LOADING,
             LOGIN_OK,
             LOGIN_TAKEN,
+            API_ERROR,
         }
 
         interface Api {
