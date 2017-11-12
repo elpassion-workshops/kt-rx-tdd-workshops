@@ -25,9 +25,19 @@ class SignUpLoginValidationReducerTest {
         state.assertLastValue(State.LOADING)
     }
 
+    @Test
+    fun shouldBeIdleAfterErasingLogin() {
+        events.accept(LoginChangedEvent("login"))
+        events.accept(LoginChangedEvent(""))
+        state.assertLastValue(State.IDLE)
+    }
+
     class LoginValidationReducer : (Observable<Any>) -> Observable<State> {
         override fun invoke(events: Observable<Any>): Observable<State> {
-            return events.map { State.LOADING }.startWith(State.IDLE)
+            return events
+                    .ofType(LoginChangedEvent::class.java)
+                    .map { if (it.login.isEmpty()) State.IDLE else State.LOADING }
+                    .startWith(State.IDLE)
         }
     }
 
