@@ -12,6 +12,7 @@ interface SignUp {
             IDLE,
             LOADING,
             LOGIN_OK,
+            LOGIN_TAKEN,
         }
 
         interface Api {

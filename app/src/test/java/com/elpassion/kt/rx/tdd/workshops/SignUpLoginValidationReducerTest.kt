@@ -51,6 +51,13 @@ class SignUpLoginValidationReducerTest {
         verify(api).call("login")
     }
 
+    @Test
+    fun shouldReturnLoginTakenWhenApiReturnsFalse() {
+        events.accept(LoginChangedEvent("login"))
+        apiSubject.onSuccess(false)
+        state.assertLastValue(State.LOGIN_TAKEN)
+    }
+
     class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : (Observable<Any>) -> Observable<State> {
         override fun invoke(events: Observable<Any>): Observable<State> {
             return events
@@ -60,7 +67,7 @@ class SignUpLoginValidationReducerTest {
                             Observable.just(State.IDLE)
                         } else {
                             api.call(it.login)
-                                    .map { State.LOGIN_OK }
+                                    .map { if (it) State.LOGIN_OK else State.LOGIN_TAKEN }
                                     .toObservable()
                                     .startWith(State.LOADING)
                         }
