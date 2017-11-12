@@ -1,11 +1,48 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.elpassion.kt.rx.tdd.workshops">
 
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <permission
+        android:name="com.elpassion.kt.rx.tdd.workshops.fileprovider.READ"
+        android:description="@string/permission_to_read_report_images"
+        android:label="@string/permission_to_read_report_images" />
+
+    <uses-permission android:name="com.elpassion.kt.rx.tdd.workshops.fileprovider.READ" />
+
+    <permission
+        android:name="com.elpassion.kt.rx.tdd.workshops.fileprovider.WRITE"
+        android:description="@string/permission_to_write_report_images"
+        android:label="@string/permission_to_write_report_images" />
+
+    <uses-permission android:name="com.elpassion.kt.rx.tdd.workshops.fileprovider.WRITE" />
+
     <application
+        android:name=".MyFirstApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme" />
+        android:theme="@style/AppTheme">
+        <activity android:name=".signup.SignUpActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.elpassion.kt.rx.tdd.workshops"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+    </application>
 </manifest>

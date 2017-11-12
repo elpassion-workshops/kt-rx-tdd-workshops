@@ -1,0 +1,4 @@
+<resources>
+    <string name="permission_to_read_report_images">permission_to_read_report_images</string>
+    <string name="permission_to_write_report_images">permission_to_write_report_images</string>
+</resources>
