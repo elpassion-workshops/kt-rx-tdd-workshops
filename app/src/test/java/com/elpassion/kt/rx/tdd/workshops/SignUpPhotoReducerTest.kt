@@ -42,13 +42,21 @@ class SignUpPhotoReducerTest {
         state.assertLastValue(SignUp.Photo.State.EMPTY)
     }
 
+    @Test
+    fun shouldHaveProperPhotoWhenPhotoTaken() {
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionRequesterSubject.onSuccess(Unit)
+        photoRequesterSubject.onSuccess("other photo uri")
+        state.assertLastValue(SignUp.Photo.State.Photo("other photo uri"))
+    }
+
     class PhotoReducer(private val permissionRequester: SignUp.Photo.PermissionRequester,
                        private val photoRequester: SignUp.Photo.PhotoRequester) : (Observable<Any>) -> Observable<SignUp.Photo.State> {
         override fun invoke(events: Observable<Any>): Observable<SignUp.Photo.State> {
             return events.ofType(SignUp.Photo.TakePhotoEvent::class.java)
                     .switchMap { permissionRequester.request().toObservable() }
                     .switchMap { photoRequester.request().toObservable() }
-                    .map<SignUp.Photo.State> { SignUp.Photo.State.Photo("photo uri") }
+                    .map<SignUp.Photo.State> { SignUp.Photo.State.Photo(it) }
                     .startWith(SignUp.Photo.State.EMPTY)
         }
     }
