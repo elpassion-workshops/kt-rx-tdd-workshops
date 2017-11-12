@@ -7,9 +7,7 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
-import io.reactivex.observers.TestObserver
 import io.reactivex.subjects.SingleSubject
-import junit.framework.Assert
 import org.junit.Test
 
 class SignUpLoginValidationReducerTest {
@@ -17,8 +15,7 @@ class SignUpLoginValidationReducerTest {
     private val apiSubject = SingleSubject.create<Boolean>()
     private val events = PublishRelay.create<Any>()
     private val api = mock<SignUp.LoginValidation.Api> { on { call("login") } doReturn (apiSubject) }
-    private val reducer = LoginValidationReducer(api)
-    private val state = reducer.invoke(events).test()
+    private val state = LoginValidationReducer(api).invoke(events).test()
 
     @Test
     fun shouldBeIdleAtTheBegging() {
@@ -82,9 +79,5 @@ class SignUpLoginValidationReducerTest {
                     }
                     .startWith(State.IDLE)
         }
-    }
-
-    fun <T> TestObserver<T>.assertLastValue(expected: T) {
-        Assert.assertEquals(expected, values().last())
     }
 }

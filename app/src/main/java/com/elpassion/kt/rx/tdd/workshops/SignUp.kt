@@ -20,4 +20,10 @@ interface SignUp {
             fun call(login: String): Single<Boolean>
         }
     }
+
+    interface Photo{
+        enum class State {
+            EMPTY,
+        }
+    }
 }
