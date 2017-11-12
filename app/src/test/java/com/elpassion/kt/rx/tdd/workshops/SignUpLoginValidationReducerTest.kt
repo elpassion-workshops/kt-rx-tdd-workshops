@@ -10,8 +10,11 @@ import org.junit.Test
 
 class SignUpLoginValidationReducerTest {
 
+    private val apiSubject = PublishRelay.create<Boolean>()
     private val events = PublishRelay.create<Any>()
-    private val reducer = LoginValidationReducer()
+    private val reducer = LoginValidationReducer(object : SignUp.LoginValidation.Api {
+        override fun call() = apiSubject
+    })
     private val state = reducer.invoke(events).test()
 
     @Test
@@ -32,11 +35,25 @@ class SignUpLoginValidationReducerTest {
         state.assertLastValue(State.IDLE)
     }
 
-    class LoginValidationReducer : (Observable<Any>) -> Observable<State> {
+    @Test
+    fun shouldReturnLoginOkWhenApiPasses() {
+        events.accept(LoginChangedEvent("login"))
+        apiSubject.accept(true)
+        state.assertLastValue(State.LOGIN_OK)
+    }
+
+    class LoginValidationReducer(private val api: SignUp.LoginValidation.Api) : (Observable<Any>) -> Observable<State> {
         override fun invoke(events: Observable<Any>): Observable<State> {
             return events
                     .ofType(LoginChangedEvent::class.java)
-                    .map { if (it.login.isEmpty()) State.IDLE else State.LOADING }
+                    .switchMap {
+                        if (it.login.isEmpty()) {
+                            Observable.just(State.IDLE)
+                        } else {
+                            api.call().map { State.LOGIN_OK }
+                                    .startWith(State.LOADING)
+                        }
+                    }
                     .startWith(State.IDLE)
         }
     }

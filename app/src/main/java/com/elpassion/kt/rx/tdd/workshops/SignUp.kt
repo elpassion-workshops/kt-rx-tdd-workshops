@@ -1,5 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops
 
+import io.reactivex.Observable
+
 interface SignUp {
     data class State(val loginValidation: LoginValidation.State)
 
@@ -9,6 +11,11 @@ interface SignUp {
         enum class State {
             IDLE,
             LOADING,
+            LOGIN_OK,
+        }
+
+        interface Api {
+            fun call(): Observable<Boolean>
         }
     }
 }
