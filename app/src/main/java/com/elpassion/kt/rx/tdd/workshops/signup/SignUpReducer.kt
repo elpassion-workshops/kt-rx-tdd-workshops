@@ -44,6 +44,7 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
 
     private fun takePhoto(events: Events, permissionSubject: () -> Maybe<Unit>, camera: () -> Maybe<String>): Observable<SignUp.Photo.State> {
         return events
+                .ofType(SignUp.Photo.TakePhotoEvent::class.java)
                 .flatMapMaybe {
                     permissionSubject()
                 }
