@@ -44,4 +44,11 @@ class SignUpActivityTest {
         onId(R.id.loginInput).typeText("a")
         onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_loading)
     }
+
+    @Test
+    fun shouldShowLoginAvailableValidationState() {
+        onId(R.id.loginInput).typeText("a")
+        apiSubject.onSuccess(true)
+        onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_available)
+    }
 }
