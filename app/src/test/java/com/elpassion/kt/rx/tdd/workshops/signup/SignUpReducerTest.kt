@@ -8,6 +8,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -73,16 +74,23 @@ class SignUpReducerTest {
 
     @Test
     fun shouldCallCameraWhenAddingPhoto() {
-        permissionSubject.onSuccess(Unit)
         events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(Unit)
         verify(camera).invoke()
     }
 
     @Test
     fun shouldNotCallCameraWithoutPermissionsWhenAddingPhoto() {
-        permissionSubject.onComplete()
         events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onComplete()
         verify(camera, never()).invoke()
+    }
+
+    @Test
+    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(Unit)
+        state.assertLastValueThat { photo == SignUp.Photo.State.Photo }
     }
 }
 
@@ -92,8 +100,7 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
 
     override fun invoke(events: Events): Observable<SignUp.State> {
         permissionSubject().subscribe { camera() }
-        return validateLogin(events)
-                .map { SignUp.State(it, SignUp.Photo.State.EMPTY) }
+        return Observables.combineLatest(validateLogin(events), takePhoto(events), SignUp::State)
     }
 
     private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
@@ -122,6 +129,11 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
                 .onErrorReturnItem(SignUp.LoginValidation.State.ERROR)
                 .startWith(SignUp.LoginValidation.State.LOADING)
     }
+
+    private fun takePhoto(events: Events): Observable<SignUp.Photo.State> {
+        return events.map<SignUp.Photo.State> { SignUp.Photo.State.Photo }
+                .startWith(SignUp.Photo.State.EMPTY)
+    }
 }
 
 interface SignUp {
@@ -144,6 +156,7 @@ interface SignUp {
     interface Photo {
         sealed class State {
             object EMPTY : State()
+            object Photo : State()
         }
 
         object TakePhotoEvent
