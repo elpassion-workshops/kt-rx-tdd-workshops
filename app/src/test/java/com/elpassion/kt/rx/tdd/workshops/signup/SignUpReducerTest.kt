@@ -50,26 +50,34 @@ class SignUpReducerTest {
 
 class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        return validateLogin(events)
+                .map { SignUp.State(it) }
+    }
+
+    private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
         return events
                 .ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
                     if (it.login.isNotEmpty()) {
-                        api()
-                                .toObservable()
-                                .map {
-                                    if (it) {
-                                        SignUp.LoginValidation.State.LOGIN_AVAILABLE
-                                    } else {
-                                        SignUp.LoginValidation.State.LOGIN_TAKEN
-                                    }
-                                }
-                                .startWith(SignUp.LoginValidation.State.LOADING)
+                        validateLoginWithApi()
                     } else {
                         Observable.just(SignUp.LoginValidation.State.IDLE)
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
-                .map { SignUp.State(it) }
+    }
+
+    private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> {
+        return api()
+                .toObservable()
+                .map {
+                    if (it) {
+                        SignUp.LoginValidation.State.LOGIN_AVAILABLE
+                    } else {
+                        SignUp.LoginValidation.State.LOGIN_TAKEN
+                    }
+                }
+                .startWith(SignUp.LoginValidation.State.LOADING)
     }
 }
 
