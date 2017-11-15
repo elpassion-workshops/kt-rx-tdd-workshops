@@ -17,7 +17,7 @@ class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
     private val events = PublishRelay.create<Any>()
-    val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
+    private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
     private val state = SignUpReducer(api).invoke(events).test()
 
     @Test
@@ -64,12 +64,17 @@ class SignUpReducerTest {
         apiSubject.onError(RuntimeException())
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.ERROR }
     }
+
+    @Test
+    fun shouldPhotoStateBeEmptyAtTheBegging() {
+        state.assertLastValueThat { photo == SignUp.Photo.State.EMPTY }
+    }
 }
 
 class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return validateLogin(events)
-                .map { SignUp.State(it) }
+                .map { SignUp.State(it, SignUp.Photo.State.EMPTY) }
     }
 
     private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
@@ -101,7 +106,9 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reduc
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(
+            val loginValidation: LoginValidation.State,
+            val photo: Photo.State)
 
     interface LoginValidation {
         enum class State {
@@ -113,6 +120,12 @@ interface SignUp {
         }
 
         data class LoginChangedEvent(val login: String)
+    }
+
+    interface Photo {
+        sealed class State {
+            object EMPTY : State()
+        }
     }
 }
 
