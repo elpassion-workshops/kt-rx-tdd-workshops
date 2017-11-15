@@ -5,12 +5,15 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
+    private val apiSubject = SingleSubject.create<Boolean>()
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer().invoke(events).test()
+    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -29,17 +32,27 @@ class SignUpReducerTest {
         events.accept(SignUp.LoginValidation.LoginChangedEvent(""))
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.IDLE }
     }
+
+    @Test
+    fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onSuccess(true)
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOGIN_AVAILABLE }
+    }
 }
 
-class SignUpReducer : Reducer<SignUp.State> {
+class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
-                .map {
+                .switchMap {
                     if (it.login.isNotEmpty()) {
-                        SignUp.State(SignUp.LoginValidation.State.LOADING)
+                        api()
+                                .toObservable()
+                                .map { SignUp.State(SignUp.LoginValidation.State.LOGIN_AVAILABLE) }
+                                .startWith(SignUp.State(SignUp.LoginValidation.State.LOADING))
                     } else {
-                        SignUp.State(SignUp.LoginValidation.State.IDLE)
+                        Observable.just(SignUp.State(SignUp.LoginValidation.State.IDLE))
                     }
                 }
                 .startWith(SignUp.State(SignUp.LoginValidation.State.IDLE))
@@ -53,6 +66,7 @@ interface SignUp {
         enum class State {
             IDLE,
             LOADING,
+            LOGIN_AVAILABLE,
         }
 
         data class LoginChangedEvent(val login: String)
