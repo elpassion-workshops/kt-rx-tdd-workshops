@@ -58,17 +58,18 @@ class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.Sta
                                 .toObservable()
                                 .map {
                                     if (it) {
-                                        SignUp.State(SignUp.LoginValidation.State.LOGIN_AVAILABLE)
+                                        SignUp.LoginValidation.State.LOGIN_AVAILABLE
                                     } else {
-                                        SignUp.State(SignUp.LoginValidation.State.LOGIN_TAKEN)
+                                        SignUp.LoginValidation.State.LOGIN_TAKEN
                                     }
                                 }
-                                .startWith(SignUp.State(SignUp.LoginValidation.State.LOADING))
+                                .startWith(SignUp.LoginValidation.State.LOADING)
                     } else {
-                        Observable.just(SignUp.State(SignUp.LoginValidation.State.IDLE))
+                        Observable.just(SignUp.LoginValidation.State.IDLE)
                     }
                 }
-                .startWith(SignUp.State(SignUp.LoginValidation.State.IDLE))
+                .startWith(SignUp.LoginValidation.State.IDLE)
+                .map { SignUp.State(it) }
     }
 }
 
