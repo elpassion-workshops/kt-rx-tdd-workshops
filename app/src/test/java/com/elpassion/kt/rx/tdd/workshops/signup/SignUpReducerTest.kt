@@ -16,9 +16,10 @@ import org.junit.Test
 class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val events = PublishRelay.create<Any>()
+    private val camera = mock<() -> Unit>()
     private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
-    private val state = SignUpReducer(api).invoke(events).test()
+    private val events = PublishRelay.create<Any>()
+    private val state = SignUpReducer(api, camera).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -69,10 +70,18 @@ class SignUpReducerTest {
     fun shouldPhotoStateBeEmptyAtTheBegging() {
         state.assertLastValueThat { photo == SignUp.Photo.State.EMPTY }
     }
+
+    @Test
+    fun shouldCallCameraWhenAddingPhoto() {
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        verify(camera).invoke()
+    }
 }
 
-class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: (login: String) -> Single<Boolean>, private val camera: () -> Unit) : Reducer<SignUp.State> {
+
     override fun invoke(events: Events): Observable<SignUp.State> {
+        camera()
         return validateLogin(events)
                 .map { SignUp.State(it, SignUp.Photo.State.EMPTY) }
     }
@@ -126,6 +135,8 @@ interface SignUp {
         sealed class State {
             object EMPTY : State()
         }
+
+        object TakePhotoEvent
     }
 }
 
