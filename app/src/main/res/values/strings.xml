@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">KtRxTddApplication</string>
     <string name="login_validation_idle">a</string>
+    <string name="login_validation_loading">verifying</string>
 </resources>
