@@ -4,22 +4,22 @@ import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.*
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
+    private val permissionSubject = MaybeSubject.create<Unit>()
     private val camera = mock<() -> Unit>()
     private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer(api, camera).invoke(events).test()
+    private val state = SignUpReducer(api, camera, { permissionSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -73,15 +73,25 @@ class SignUpReducerTest {
 
     @Test
     fun shouldCallCameraWhenAddingPhoto() {
+        permissionSubject.onSuccess(Unit)
         events.accept(SignUp.Photo.TakePhotoEvent)
         verify(camera).invoke()
     }
+
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenAddingPhoto() {
+        permissionSubject.onComplete()
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        verify(camera, never()).invoke()
+    }
 }
 
-class SignUpReducer(private val api: (login: String) -> Single<Boolean>, private val camera: () -> Unit) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
+                    private val camera: () -> Unit,
+                    private val permissionSubject: () -> Maybe<Unit>) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
-        camera()
+        permissionSubject().subscribe { camera() }
         return validateLogin(events)
                 .map { SignUp.State(it, SignUp.Photo.State.EMPTY) }
     }
