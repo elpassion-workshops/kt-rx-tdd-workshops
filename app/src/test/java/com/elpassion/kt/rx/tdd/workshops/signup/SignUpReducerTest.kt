@@ -4,6 +4,10 @@ import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
@@ -13,7 +17,8 @@ class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
+    val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
+    private val state = SignUpReducer(api).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -46,9 +51,15 @@ class SignUpReducerTest {
         apiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOGIN_TAKEN }
     }
+
+    @Test
+    fun shouldValidateLoginUsingPassedLogin() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        verify(api).invoke("login")
+    }
 }
 
-class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return validateLogin(events)
                 .map { SignUp.State(it) }
@@ -59,7 +70,7 @@ class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.Sta
                 .ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
                     if (it.login.isNotEmpty()) {
-                        validateLoginWithApi()
+                        validateLoginWithApi(it.login)
                     } else {
                         Observable.just(SignUp.LoginValidation.State.IDLE)
                     }
@@ -67,8 +78,8 @@ class SignUpReducer(private val api: () -> Single<Boolean>) : Reducer<SignUp.Sta
                 .startWith(SignUp.LoginValidation.State.IDLE)
     }
 
-    private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> {
-        return api()
+    private fun validateLoginWithApi(login: String): Observable<SignUp.LoginValidation.State> {
+        return api(login)
                 .toObservable()
                 .map {
                     if (it) {
