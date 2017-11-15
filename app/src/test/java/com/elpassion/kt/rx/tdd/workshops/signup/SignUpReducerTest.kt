@@ -17,7 +17,8 @@ class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
     private val permissionSubject = MaybeSubject.create<Unit>()
-    private val camera = mock<() -> Unit>()
+    private val cameraSubject = MaybeSubject.create<String>()
+    private val camera = mock<() -> Maybe<String>> { on { invoke() } doReturn cameraSubject }
     private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
     private val events = PublishRelay.create<Any>()
     private val state = SignUpReducer(api, camera, { permissionSubject }).invoke(events).test()
@@ -87,20 +88,20 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted() {
         events.accept(SignUp.Photo.TakePhotoEvent)
         permissionSubject.onSuccess(Unit)
-        state.assertLastValueThat { photo == SignUp.Photo.State.Photo }
+        cameraSubject.onSuccess("photo uri")
+        state.assertLastValueThat { photo == SignUp.Photo.State.Photo("photo uri") }
     }
 }
 
 class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
-                    private val camera: () -> Unit,
+                    private val camera: () -> Maybe<String>,
                     private val permissionSubject: () -> Maybe<Unit>) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
-        permissionSubject().subscribe { camera() }
-        return Observables.combineLatest(validateLogin(events), takePhoto(events), SignUp::State)
+        return Observables.combineLatest(validateLogin(events), takePhoto(events, permissionSubject, camera), SignUp::State)
     }
 
     private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
@@ -130,8 +131,15 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
                 .startWith(SignUp.LoginValidation.State.LOADING)
     }
 
-    private fun takePhoto(events: Events): Observable<SignUp.Photo.State> {
-        return events.map<SignUp.Photo.State> { SignUp.Photo.State.Photo }
+    private fun takePhoto(events: Events, permissionSubject: () -> Maybe<Unit>, camera: () -> Maybe<String>): Observable<SignUp.Photo.State> {
+        return events
+                .flatMapMaybe {
+                    permissionSubject()
+                }
+                .flatMapMaybe {
+                    camera()
+                }
+                .map<SignUp.Photo.State> { SignUp.Photo.State.Photo(it) }
                 .startWith(SignUp.Photo.State.EMPTY)
     }
 }
@@ -156,7 +164,7 @@ interface SignUp {
     interface Photo {
         sealed class State {
             object EMPTY : State()
-            object Photo : State()
+            data class Photo(val uri: String) : State()
         }
 
         object TakePhotoEvent
