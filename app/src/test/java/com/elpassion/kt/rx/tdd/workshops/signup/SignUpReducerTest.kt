@@ -57,6 +57,13 @@ class SignUpReducerTest {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         verify(api).invoke("login")
     }
+
+    @Test
+    fun shouldShowErrorWhenApiReturnsError() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onError(RuntimeException())
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.ERROR }
+    }
 }
 
 class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reducer<SignUp.State> {
@@ -88,6 +95,7 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>) : Reduc
                         SignUp.LoginValidation.State.LOGIN_TAKEN
                     }
                 }
+                .onErrorReturnItem(SignUp.LoginValidation.State.ERROR)
                 .startWith(SignUp.LoginValidation.State.LOADING)
     }
 }
@@ -101,6 +109,7 @@ interface SignUp {
             LOADING,
             LOGIN_AVAILABLE,
             LOGIN_TAKEN,
+            ERROR,
         }
 
         data class LoginChangedEvent(val login: String)
