@@ -88,6 +88,12 @@ class SignUpReducerTest {
     fun shouldNotRequestPermissionWithoutEvent() {
         assertFalse(permissionSubject.hasObservers())
     }
+
+    @Test
+    fun shouldNotRequestPermissionWithoutEventToTakePhoto() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("123456789"))
+        assertFalse(permissionSubject.hasObservers())
+    }
 }
 
 interface SignUp {
@@ -121,7 +127,9 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
     override fun invoke(events: Events): Observable<SignUp.State> =
             Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
 
-    private fun takePhotos(events: Events) = events.flatMapSingle { cameraPermission() }
+    private fun takePhotos(events: Events) = events
+            .ofType(SignUp.Photo.TakePhotoEvent::class.java)
+            .flatMapSingle { cameraPermission() }
             .filter { it }
             .flatMap { camera().toObservable() }
             .map<SignUp.Photo.State>(SignUp.Photo.State::Taken)
