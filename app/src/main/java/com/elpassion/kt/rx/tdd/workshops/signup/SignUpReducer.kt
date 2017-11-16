@@ -14,8 +14,20 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
                     private val signUpApi: (String, String) -> Completable) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
-        events.ofType(SignUp.RegisterEvent::class.java).flatMapCompletable { signUpApi.invoke("login", "photo uri") }.subscribe()
-        return Observables.combineLatest(validateLogin(events), takePhoto(events, permissionSubject, camera), { a, b -> SignUp.State(a, b, true) })
+        return Observables.combineLatest(
+                validateLogin(events),
+                takePhoto(events, permissionSubject, camera),
+                register(events), SignUp::State)
+    }
+
+    private fun register(events: Events): Observable<Boolean> {
+        return events.ofType(SignUp.RegisterEvent::class.java)
+                .flatMap {
+                    signUpApi.invoke("login", "photo uri")
+                            .toObservable<Boolean>()
+                            .startWith(true)
+                }
+                .startWith(false)
     }
 
     private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {

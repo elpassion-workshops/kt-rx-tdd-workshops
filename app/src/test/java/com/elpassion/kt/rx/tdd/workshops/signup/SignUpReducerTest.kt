@@ -120,6 +120,11 @@ class SignUpReducerTest {
         state.assertLastValueThat { showLoader }
     }
 
+    @Test
+    fun shouldNotShowLoaderByDefault() {
+        state.assertLastValueThat { !showLoader }
+    }
+
     private fun typeLoginAndTakePhoto() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onSuccess(true)
