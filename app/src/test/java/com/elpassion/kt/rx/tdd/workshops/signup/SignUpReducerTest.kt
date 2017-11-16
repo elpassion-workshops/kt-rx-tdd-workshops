@@ -77,20 +77,23 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>) : Reducer<Sig
                     if (it.login.isEmpty()) {
                         just(SignUp.LoginValidation.State.IDLE)
                     } else {
-                        api()
-                                .map {
-                                    if (it) {
-                                        SignUp.LoginValidation.State.AVAILABLE
-                                    } else {
-                                        SignUp.LoginValidation.State.TAKEN
-                                    }
-                                }
-                                .toObservable()
-                                .onErrorReturn { SignUp.LoginValidation.State.ERROR }
-                                .startWith(SignUp.LoginValidation.State.LOADING)
+                        validateLoginWithApi()
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
                 .map { SignUp.State(it) }
     }
+
+    private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> =
+            api()
+                    .map {
+                        if (it) {
+                            SignUp.LoginValidation.State.AVAILABLE
+                        } else {
+                            SignUp.LoginValidation.State.TAKEN
+                        }
+                    }
+                    .toObservable()
+                    .onErrorReturn { SignUp.LoginValidation.State.ERROR }
+                    .startWith(SignUp.LoginValidation.State.LOADING)
 }
