@@ -16,7 +16,7 @@ fun ImageView.setImageFromStorage(uriString: String) =
 fun ImageView.setImageFromStorage(uri: Uri) =
         setImageBitmap(context.loadImageFromStorage(uri))
 
-private fun Context.loadImageFromStorage(uri: Uri) =
+fun Context.loadImageFromStorage(uri: Uri) =
         loadImageFromStorage({ contentResolver.openInputStream(uri) })
 
 private fun loadImageFromStorage(inputStream: () -> InputStream): Bitmap {

@@ -51,7 +51,7 @@ private fun crateAndAddFragment(activity: Activity): RxCameraFragment {
     }
 }
 
-private fun Context.createImageFileUri(): Uri {
+fun Context.createImageFileUri(): Uri {
     val directory = File(filesDir, "photos").apply { mkdir() }
     val file = File(directory, UUID.randomUUID().toString())
     return FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID, file)
