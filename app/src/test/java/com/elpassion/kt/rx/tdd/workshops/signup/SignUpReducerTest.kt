@@ -10,14 +10,20 @@ import io.reactivex.observers.TestObserver
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val cameraSubject = MaybeSubject.create<String>()
+    private val permissionSubject = SingleSubject.create<Boolean>()
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val state: TestObserver<SignUp.State> = SignUpReducer({ apiSubject }, { cameraSubject }).invoke(events).test()
+    private val state: TestObserver<SignUp.State> = SignUpReducer(
+            { apiSubject },
+            { cameraSubject },
+            { permissionSubject }
+    ).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -61,6 +67,7 @@ class SignUpReducerTest {
     @Test
     fun shouldTakePhotoOnTakePhoto() {
         events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(true)
         cameraSubject.onSuccess("photo uri")
         state.assertLastValueThat { photo == SignUp.Photo.State.Taken("photo uri") }
     }
@@ -68,6 +75,13 @@ class SignUpReducerTest {
     @Test
     fun shouldHavePhotoEmptyOnStart() {
         state.assertLastValueThat { photo == SignUp.Photo.State.Empty }
+    }
+
+    @Test
+    fun shouldNotTakePhotoUntilPermissionGranted() {
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(false)
+        assertFalse(cameraSubject.hasObservers())
     }
 }
 
@@ -96,12 +110,15 @@ interface SignUp {
 }
 
 class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
-                    private val camera: () -> MaybeSubject<String>) : Reducer<SignUp.State> {
+                    private val camera: () -> MaybeSubject<String>,
+                    private val cameraPermission: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> =
             Observables.combineLatest(validateLogin(events), takePhotos(), SignUp::State)
 
-    private fun takePhotos() = camera().toObservable()
+    private fun takePhotos() = cameraPermission()
+            .filter { it }
+            .flatMapObservable { camera().toObservable() }
             .map<SignUp.Photo.State>(SignUp.Photo.State::Taken)
             .startWith(SignUp.Photo.State.Empty)
 
