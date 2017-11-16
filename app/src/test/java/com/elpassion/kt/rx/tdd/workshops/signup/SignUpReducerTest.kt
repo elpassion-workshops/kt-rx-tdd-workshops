@@ -13,7 +13,7 @@ class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val state = SignUpRelay({ apiSubject }).invoke(events).test()
+    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -40,7 +40,7 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldShowErrorOnLoginTaken() {
+    fun shouldShowLoginTakenOnLoginTaken() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("taken login"))
         apiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.TAKEN }
@@ -62,7 +62,7 @@ interface SignUp {
     }
 }
 
-class SignUpRelay(private val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
