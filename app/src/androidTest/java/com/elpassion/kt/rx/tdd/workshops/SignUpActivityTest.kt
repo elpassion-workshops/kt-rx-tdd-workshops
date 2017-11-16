@@ -2,10 +2,7 @@ package com.elpassion.kt.rx.tdd.workshops
 
 import android.support.test.rule.ActivityTestRule
 import android.support.test.runner.AndroidJUnit4
-import com.elpassion.android.commons.espresso.hasText
-import com.elpassion.android.commons.espresso.isDisplayed
-import com.elpassion.android.commons.espresso.onId
-import com.elpassion.android.commons.espresso.typeText
+import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpActivity
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI
 import com.nhaarman.mockito_kotlin.any
@@ -64,5 +61,12 @@ class SignUpActivityTest {
         onId(R.id.loginInput).typeText("a")
         apiSubject.onError(RuntimeException())
         onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_error)
+    }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased() {
+        onId(R.id.loginInput).typeText("a")
+        onId(R.id.loginInput).replaceText("")
+        onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_idle)
     }
 }
