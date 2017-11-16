@@ -12,6 +12,7 @@ import io.reactivex.Observable
 import io.reactivex.Observable.just
 import io.reactivex.observers.TestObserver
 import io.reactivex.rxkotlin.Observables
+import io.reactivex.rxkotlin.withLatestFrom
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Assert
@@ -109,22 +110,29 @@ class SignUpReducerTest {
 
     @Test
     fun shouldPassLoginAndPhotoToSignUpApiOnRegisterEvent() {
-        typeLoginAndTakePhoto()
+        typeLoginAndTakePhoto("login", "photo uri")
         events.accept(SignUp.RegisterEvent)
         verify(signUpApi).register("login", "photo uri")
     }
 
     @Test
     fun shouldNotSignUpWithoutRegisterEvent() {
-        typeLoginAndTakePhoto()
+        typeLoginAndTakePhoto("login", "photo uri")
         verify(signUpApi, never()).register(any(), any())
     }
 
-    private fun typeLoginAndTakePhoto() {
-        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+    @Test
+    fun shouldPassRealLoginAndPhotoToSignUpApiOnRegisterEvent() {
+        typeLoginAndTakePhoto("another login", "another photo uri")
+        events.accept(SignUp.RegisterEvent)
+        verify(signUpApi).register("another login", "another photo uri")
+    }
+
+    private fun typeLoginAndTakePhoto(login: String, photoUri: String) {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent(login))
         events.accept(SignUp.Photo.TakePhotoEvent)
         permissionSubject.onSuccess(true)
-        cameraSubject.onSuccess("photo uri")
+        cameraSubject.onSuccess(photoUri)
     }
 }
 
@@ -163,12 +171,16 @@ class SignUpReducer(private val api: (String) -> SingleSubject<Boolean>,
                     private val signUpApi: SignUp.Api) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
-        events.ofType(SignUp.RegisterEvent::class.java)
-                .map {
-                    signUpApi.register("login", "photo uri")
-                    it
-                }.subscribe()
-        return Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
+        val combineLatest = Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State).share()
+        val switchMap = events.ofType(SignUp.RegisterEvent::class.java)
+                .withLatestFrom(combineLatest, { _, y -> y.photo })
+                .ofType(SignUp.Photo.State.Taken::class.java)
+                .map { it.photo }
+                .withLatestFrom(
+                        events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
+                                .map { it.login }, { photo, login -> photo to login })
+                .switchMap { (photo, login) -> signUpApi.register(login, photo);Observable.empty<SignUp.State>() }
+        return combineLatest.mergeWith(switchMap)
     }
 
     private fun takePhotos(events: Events) = events
