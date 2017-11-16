@@ -83,6 +83,11 @@ class SignUpReducerTest {
         permissionSubject.onSuccess(false)
         assertFalse(cameraSubject.hasObservers())
     }
+
+    @Test
+    fun shouldNotRequestPermissionWithoutEvent() {
+        assertFalse(permissionSubject.hasObservers())
+    }
 }
 
 interface SignUp {
@@ -104,7 +109,7 @@ interface SignUp {
         object TakePhotoEvent
         sealed class State {
             data class Taken(val photo: String) : State()
-            object Empty: State()
+            object Empty : State()
         }
     }
 }
@@ -114,11 +119,11 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
                     private val cameraPermission: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> =
-            Observables.combineLatest(validateLogin(events), takePhotos(), SignUp::State)
+            Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
 
-    private fun takePhotos() = cameraPermission()
+    private fun takePhotos(events: Events) = events.flatMapSingle { cameraPermission() }
             .filter { it }
-            .flatMapObservable { camera().toObservable() }
+            .flatMap { camera().toObservable() }
             .map<SignUp.Photo.State>(SignUp.Photo.State::Taken)
             .startWith(SignUp.Photo.State.Empty)
 
