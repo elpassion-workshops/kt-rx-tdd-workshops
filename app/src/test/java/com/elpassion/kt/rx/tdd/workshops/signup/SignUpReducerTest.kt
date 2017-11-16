@@ -38,6 +38,13 @@ class SignUpReducerTest {
         apiSubject.onSuccess(true)
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.AVAILABLE }
     }
+
+    @Test
+    fun shouldShowErrorOnLoginTaken() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("taken login"))
+        apiSubject.onSuccess(false)
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.TAKEN }
+    }
 }
 
 interface SignUp {
@@ -50,6 +57,7 @@ interface SignUp {
             IDLE,
             LOADING,
             AVAILABLE,
+            TAKEN,
         }
     }
 }
@@ -61,7 +69,14 @@ class SignUpRelay(private val api: () -> SingleSubject<Boolean>) : Reducer<SignU
                     if (it.login.isEmpty()) {
                         just(SignUp.LoginValidation.State.IDLE)
                     } else {
-                        api().map { SignUp.LoginValidation.State.AVAILABLE }
+                        api()
+                                .map {
+                                    if (it) {
+                                        SignUp.LoginValidation.State.AVAILABLE
+                                    } else {
+                                        SignUp.LoginValidation.State.TAKEN
+                                    }
+                                }
                                 .toObservable()
                                 .startWith(SignUp.LoginValidation.State.LOADING)
                     }
