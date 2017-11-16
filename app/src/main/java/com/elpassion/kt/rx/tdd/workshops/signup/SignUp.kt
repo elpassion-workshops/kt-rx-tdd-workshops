@@ -1,6 +1,8 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 interface SignUp {
+    object RegisterEvent
+
     data class State(
             val loginValidation: LoginValidation.State,
             val photo: Photo.State)

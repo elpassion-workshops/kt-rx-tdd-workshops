@@ -3,6 +3,7 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
+import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.subjects.MaybeSubject
@@ -17,8 +18,9 @@ class SignUpReducerTest {
     private val cameraSubject = MaybeSubject.create<String>()
     private val camera = mock<() -> Maybe<String>> { on { invoke() } doReturn cameraSubject }
     private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
+    private val signUpApi = mock<(String, String) -> Completable> { on { invoke(any(), any()) } doReturn Completable.complete() }
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer(api, camera, permissionRequester).invoke(events).test()
+    private val state = SignUpReducer(api, camera, permissionRequester, signUpApi).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -96,5 +98,16 @@ class SignUpReducerTest {
     fun shouldNotRequestPermissionAfterLoginChanges() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         verify(permissionRequester, never()).invoke()
+    }
+
+    @Test
+    fun shouldSendLoginAndPhotoToSignUpApiOnSend() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onSuccess(true)
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(Unit)
+        cameraSubject.onSuccess("photo uri")
+        events.accept(SignUp.RegisterEvent)
+        verify(signUpApi).invoke("login", "photo uri")
     }
 }

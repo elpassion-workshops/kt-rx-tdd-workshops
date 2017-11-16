@@ -2,6 +2,7 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
+import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -9,9 +10,11 @@ import io.reactivex.rxkotlin.Observables
 
 class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
                     private val camera: () -> Maybe<String>,
-                    private val permissionSubject: () -> Maybe<Unit>) : Reducer<SignUp.State> {
+                    private val permissionSubject: () -> Maybe<Unit>,
+                    private val signUpApi: (String, String) -> Completable) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
+        signUpApi.invoke("login", "photo uri")
         return Observables.combineLatest(validateLogin(events), takePhoto(events, permissionSubject, camera), SignUp::State)
     }
 

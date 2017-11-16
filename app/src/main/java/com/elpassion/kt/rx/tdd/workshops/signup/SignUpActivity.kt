@@ -9,6 +9,7 @@ import com.elpassion.kt.rx.tdd.workshops.utils.setImageFromStorage
 import com.jakewharton.rxbinding2.view.clicks
 import com.jakewharton.rxbinding2.widget.textChanges
 import com.trello.rxlifecycle2.components.RxActivity
+import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Observable.merge
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -19,7 +20,7 @@ class SignUpActivity : RxActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_up_activity)
-        SignUpReducer(api, camera, permissionRequester)
+        SignUpReducer(api, camera, permissionRequester, { _, _ -> Completable.complete() })
                 .invoke(uiEvents())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
