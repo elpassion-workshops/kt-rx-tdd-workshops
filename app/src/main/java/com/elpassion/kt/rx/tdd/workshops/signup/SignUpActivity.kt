@@ -2,6 +2,7 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.os.Bundle
 import com.elpassion.kt.rx.tdd.workshops.R
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.LoginValidation.ValidationResult.*
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI.api
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI.camera
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI.permissionRequester
@@ -24,12 +25,12 @@ class SignUpActivity : RxActivity() {
                 .invoke(uiEvents())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    when (it.loginValidation) {
-                        SignUp.LoginValidation.State.IDLE -> loginValidationIndicator.setText(R.string.login_validation_idle)
-                        SignUp.LoginValidation.State.LOADING -> loginValidationIndicator.setText(R.string.login_validation_loading)
-                        is SignUp.LoginValidation.State.LoginAvailable -> loginValidationIndicator.setText(R.string.login_validation_available)
-                        SignUp.LoginValidation.State.LOGIN_TAKEN -> loginValidationIndicator.setText(R.string.login_validation_taken)
-                        SignUp.LoginValidation.State.ERROR -> loginValidationIndicator.setText(R.string.login_validation_error)
+                    when (it.loginValidation.validationResult) {
+                        IDLE -> loginValidationIndicator.setText(R.string.login_validation_idle)
+                        LOADING -> loginValidationIndicator.setText(R.string.login_validation_loading)
+                        AVAILABLE -> loginValidationIndicator.setText(R.string.login_validation_available)
+                        TAKEN -> loginValidationIndicator.setText(R.string.login_validation_taken)
+                        ERROR -> loginValidationIndicator.setText(R.string.login_validation_error)
                     }
                     when (it.photo) {
                         is SignUp.Photo.State.Photo -> photo.setImageFromStorage(it.photo.uri)

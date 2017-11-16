@@ -24,34 +24,34 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.IDLE }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.IDLE }
     }
 
     @Test
     fun shouldLoginValidationStateBeInProgressWhenNotEmptyLoginArrives() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOADING }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.LOADING }
     }
 
     @Test
     fun shouldLoginValidationStateBeIdleAfterErasingLogin() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         events.accept(SignUp.LoginValidation.LoginChangedEvent(""))
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.IDLE }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.IDLE }
     }
 
     @Test
     fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onSuccess(true)
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LoginAvailable("login") }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.AVAILABLE }
     }
 
     @Test
     fun shouldLoginValidationStateBeNotAvailableWhenApiReturnsThatItIsTaken() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onSuccess(false)
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOGIN_TAKEN }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.TAKEN }
     }
 
     @Test
@@ -64,7 +64,7 @@ class SignUpReducerTest {
     fun shouldShowErrorWhenApiReturnsError() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onError(RuntimeException())
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.ERROR }
+        state.assertLastValueThat { loginValidation.validationResult == SignUp.LoginValidation.ValidationResult.ERROR }
     }
 
     @Test
@@ -132,9 +132,22 @@ class SignUpReducerTest {
         verify(signUpApi).invoke("other login", "other photo")
     }
 
+    @Test
+    fun shouldCallApiEvenWhenValidationApiReturnsErrorAfterRegisterEvent() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onError(RuntimeException())
+        takePhoto("photoUri")
+        events.accept(SignUp.RegisterEvent)
+        verify(signUpApi).invoke(any(), any())
+    }
+
     private fun typeLoginAndTakePhoto(login: String = "login", photoUri: String = "photo uri") {
         events.accept(SignUp.LoginValidation.LoginChangedEvent(login))
         apiSubject.onSuccess(true)
+        takePhoto(photoUri)
+    }
+
+    private fun takePhoto(photoUri: String = "photoUri") {
         events.accept(SignUp.Photo.TakePhotoEvent)
         permissionSubject.onSuccess(Unit)
         cameraSubject.onSuccess(photoUri)
