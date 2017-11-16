@@ -7,6 +7,7 @@ import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
 import io.reactivex.Observable.just
 import io.reactivex.observers.TestObserver
+import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -63,6 +64,11 @@ class SignUpReducerTest {
         cameraSubject.onSuccess("photo uri")
         state.assertLastValueThat { photo == SignUp.Photo.State.Taken("photo uri") }
     }
+
+    @Test
+    fun shouldHavePhotoEmptyOnStart() {
+        state.assertLastValueThat { photo == SignUp.Photo.State.Empty }
+    }
 }
 
 interface SignUp {
@@ -84,12 +90,22 @@ interface SignUp {
         object TakePhotoEvent
         sealed class State {
             data class Taken(val photo: String) : State()
+            object Empty: State()
         }
     }
 }
 
-class SignUpReducer(private val api: () -> SingleSubject<Boolean>, camera: () -> MaybeSubject<String>) : Reducer<SignUp.State> {
-    override fun invoke(events: Events): Observable<SignUp.State> {
+class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
+                    private val camera: () -> MaybeSubject<String>) : Reducer<SignUp.State> {
+
+    override fun invoke(events: Events): Observable<SignUp.State> =
+            Observables.combineLatest(validateLogin(events), takePhotos(), SignUp::State)
+
+    private fun takePhotos() = camera().toObservable()
+            .map<SignUp.Photo.State>(SignUp.Photo.State::Taken)
+            .startWith(SignUp.Photo.State.Empty)
+
+    private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
         return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
                     if (it.login.isEmpty()) {
@@ -99,7 +115,6 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>, camera: () ->
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
-                .map { SignUp.State(it, SignUp.Photo.State.Taken("photo uri")) }
     }
 
     private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> =
