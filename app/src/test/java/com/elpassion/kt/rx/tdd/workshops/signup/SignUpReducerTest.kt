@@ -120,4 +120,15 @@ class SignUpReducerTest {
         cameraSubject.onSuccess("photo uri")
         verify(signUpApi, never()).invoke(any(), any())
     }
+
+    @Test
+    fun shouldShowLoaderAfterSendingSignUpData() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onSuccess(true)
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(Unit)
+        cameraSubject.onSuccess("photo uri")
+        events.accept(SignUp.RegisterEvent)
+        state.assertLastValueThat { showLoader }
+    }
 }

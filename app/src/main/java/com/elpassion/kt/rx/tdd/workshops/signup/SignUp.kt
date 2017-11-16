@@ -5,7 +5,8 @@ interface SignUp {
 
     data class State(
             val loginValidation: LoginValidation.State,
-            val photo: Photo.State)
+            val photo: Photo.State,
+            val showLoader: Boolean)
 
     interface LoginValidation {
         enum class State {
