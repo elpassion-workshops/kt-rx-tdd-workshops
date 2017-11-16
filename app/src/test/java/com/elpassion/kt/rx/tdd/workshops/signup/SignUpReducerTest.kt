@@ -18,7 +18,7 @@ class SignUpReducerTest {
     private val cameraSubject = MaybeSubject.create<String>()
     private val camera = mock<() -> Maybe<String>> { on { invoke() } doReturn cameraSubject }
     private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
-    private val signUpApi = mock<(String, String) -> Completable> { on { invoke(any(), any()) } doReturn Completable.complete() }
+    private val signUpApi = mock<(String, String) -> Completable> { on { invoke(any(), any()) } doReturn Completable.never() }
     private val events = PublishRelay.create<Any>()
     private val state = SignUpReducer(api, camera, permissionRequester, signUpApi).invoke(events).test()
 
@@ -125,11 +125,18 @@ class SignUpReducerTest {
         state.assertLastValueThat { !showLoader }
     }
 
-    private fun typeLoginAndTakePhoto() {
-        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+    @Test
+    fun shouldUseProperLoginAndUri() {
+        typeLoginAndTakePhoto(login = "other login", photoUri = "other photo")
+        events.accept(SignUp.RegisterEvent)
+        verify(signUpApi).invoke("other login", "other photo")
+    }
+
+    private fun typeLoginAndTakePhoto(login: String = "login", photoUri: String = "photo uri") {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent(login))
         apiSubject.onSuccess(true)
         events.accept(SignUp.Photo.TakePhotoEvent)
         permissionSubject.onSuccess(Unit)
-        cameraSubject.onSuccess("photo uri")
+        cameraSubject.onSuccess(photoUri)
     }
 }
