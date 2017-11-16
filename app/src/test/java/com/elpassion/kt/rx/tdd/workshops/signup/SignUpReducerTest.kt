@@ -11,16 +11,22 @@ import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Assert.assertFalse
+import org.junit.Assert
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val cameraSubject = MaybeSubject.create<String>()
-    private val permissionSubject = SingleSubject.create<Boolean>()
     private val apiSubject = SingleSubject.create<Boolean>()
+    private val permissionSubject = SingleSubject.create<Boolean>()
+    private lateinit var passedLogin: String
+    private val api: (String) -> SingleSubject<Boolean> = {
+        passedLogin = it
+        apiSubject
+    }
     private val state: TestObserver<SignUp.State> = SignUpReducer(
-            { apiSubject },
+            api,
             { cameraSubject },
             { permissionSubject }
     ).invoke(events).test()
@@ -63,6 +69,11 @@ class SignUpReducerTest {
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.ERROR }
     }
 
+    @Test
+    fun shouldPassGivenLoginToApi() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("Login"))
+        Assert.assertEquals("Login", passedLogin)
+    }
 
     @Test
     fun shouldTakePhotoOnTakePhoto() {
@@ -115,7 +126,7 @@ interface SignUp {
     }
 }
 
-class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
+class SignUpReducer(private val api: (String) -> SingleSubject<Boolean>,
                     private val camera: () -> MaybeSubject<String>,
                     private val cameraPermission: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
 
@@ -132,18 +143,18 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>,
 
     private fun validateLogin(events: Events): Observable<SignUp.LoginValidation.State> {
         return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
-                .switchMap {
-                    if (it.login.isEmpty()) {
+                .switchMap { (login) ->
+                    if (login.isEmpty()) {
                         just(SignUp.LoginValidation.State.IDLE)
                     } else {
-                        validateLoginWithApi()
+                        validateLoginWithApi(login)
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
     }
 
-    private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> =
-            api()
+    private fun validateLoginWithApi(login : String): Observable<SignUp.LoginValidation.State> =
+            api(login)
                     .map {
                         if (it) {
                             SignUp.LoginValidation.State.AVAILABLE
