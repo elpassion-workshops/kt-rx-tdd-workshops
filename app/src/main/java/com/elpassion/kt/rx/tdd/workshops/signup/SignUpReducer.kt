@@ -19,23 +19,28 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
     override fun invoke(events: Events): Observable<SignUp.State> {
         val login = validateLogin(events).share()
         val photo = takePhoto(events, permissionSubject, camera).share()
+        val loginAndPhoto = combineLatest(login, photo, { a, b -> a to b })
+        val registerButton = registerButtonReducer(loginAndPhoto)
         return Observables.combineLatest(
                 login,
                 photo,
-                register(events, login, photo),
-                Observable.just(false),
+                register(events, loginAndPhoto),
+                registerButton,
                 SignUp::State)
     }
 
-    private fun register(events: Events, login: Observable<SignUp.LoginValidation.State>, photo: Observable<SignUp.Photo.State>): Observable<Boolean> {
+    private fun registerButtonReducer(loginAndPhoto: Observable<Pair<SignUp.LoginValidation.State, SignUp.Photo.State>>): Observable<Boolean> {
+        return loginAndPhoto
+                .map { (login, _) -> login.validationResult != IDLE }
+                .startWith(false)
+    }
+
+    private fun register(events: Events, loginAndPhoto: Observable<Pair<SignUp.LoginValidation.State, SignUp.Photo.State>>): Observable<Boolean> {
         return events.ofType(SignUp.RegisterEvent::class.java)
-                .withLatestFrom(combineLatest(
-                        login,
-                        photo,
-                        { a, b -> a to (b as SignUp.Photo.State.Photo) }),
+                .withLatestFrom(loginAndPhoto,
                         { _, b -> b })
                 .flatMap { (login, photo) ->
-                    signUpApi.invoke(login.login, photo.uri)
+                    signUpApi.invoke(login.login, (photo as SignUp.Photo.State.Photo).uri)
                             .toSingleDefault(false)
                             .toObservable()
                             .startWith(true)
