@@ -22,6 +22,12 @@ class SignUpReducerTest {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("a"))
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOADING }
     }
+
+    @Test
+    fun shouldReturnToIdleStateAfterClearingLogin() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent(""))
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.IDLE }
+    }
 }
 
 interface SignUp {
@@ -39,7 +45,14 @@ interface SignUp {
 
 class SignUpRelay : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
-        return events.map { SignUp.LoginValidation.State.LOADING }
+        return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
+                .map {
+                    if (it.login.isEmpty()) {
+                        SignUp.LoginValidation.State.IDLE
+                    } else {
+                        SignUp.LoginValidation.State.LOADING
+                    }
+                }
                 .startWith(SignUp.LoginValidation.State.IDLE)
                 .map { SignUp.State(it) }
     }
