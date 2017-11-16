@@ -1,10 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
-import android.net.Uri
-import android.support.test.InstrumentationRegistry
 import android.support.test.espresso.assertion.ViewAssertions.matches
 import android.support.test.espresso.matcher.BoundedMatcher
 import android.support.test.rule.ActivityTestRule
@@ -14,7 +11,6 @@ import android.widget.ImageView
 import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpActivity
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI
-import com.elpassion.kt.rx.tdd.workshops.utils.loadImageFromStorage
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
@@ -88,9 +84,7 @@ class SignUpActivityTest {
 
     @Test
     fun shouldTakePhotoOnTakePhotoClicked() {
-        val icon: Bitmap = BitmapFactory.decodeResource(InstrumentationRegistry.getTargetContext().resources, R.mipmap.ic_launcher)
-        val uriString = InstrumentationRegistry.getTargetContext().save(icon)
-        val bitmap = InstrumentationRegistry.getTargetContext().loadImageFromStorage(Uri.parse(uriString))
+        val (uriString, bitmap) = createTestBitmap()
         onId(R.id.takePhoto).click()
         permissionSubject.onSuccess(Unit)
         cameraSubject.onSuccess(uriString)
