@@ -23,6 +23,7 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
                 login,
                 photo,
                 register(events, login, photo),
+                Observable.just(false),
                 SignUp::State)
     }
 

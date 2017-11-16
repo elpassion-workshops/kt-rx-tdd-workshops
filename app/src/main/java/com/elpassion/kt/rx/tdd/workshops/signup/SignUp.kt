@@ -6,7 +6,8 @@ interface SignUp {
     data class State(
             val loginValidation: LoginValidation.State,
             val photo: Photo.State,
-            val showLoader: Boolean)
+            val showLoader: Boolean,
+            val isRegisterEnabled: Boolean)
 
     interface LoginValidation {
         data class State(val login: String, val validationResult: ValidationResult)
