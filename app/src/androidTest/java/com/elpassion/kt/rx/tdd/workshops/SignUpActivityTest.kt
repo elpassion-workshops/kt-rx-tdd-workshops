@@ -94,4 +94,9 @@ class SignUpActivityTest {
     fun shouldTakePhotoButtonHasProperText() {
         onId(R.id.takePhoto).hasText(R.string.take_photo_button)
     }
+
+    @Test
+    fun shouldRegisterButtonBeDisabledOnStart() {
+        onId(R.id.registerButton).isDisabled()
+    }
 }

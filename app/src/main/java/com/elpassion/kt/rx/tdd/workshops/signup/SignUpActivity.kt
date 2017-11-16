@@ -8,6 +8,7 @@ import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI.camera
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI.permissionRequester
 import com.elpassion.kt.rx.tdd.workshops.utils.setImageFromStorage
 import com.jakewharton.rxbinding2.view.clicks
+import com.jakewharton.rxbinding2.view.enabled
 import com.jakewharton.rxbinding2.widget.textChanges
 import com.trello.rxlifecycle2.components.RxActivity
 import io.reactivex.Completable
@@ -35,6 +36,7 @@ class SignUpActivity : RxActivity() {
                     when (it.photo) {
                         is SignUp.Photo.State.Photo -> photo.setImageFromStorage(it.photo.uri)
                     }
+                    registerButton.isEnabled = it.isRegisterEnabled
                 }
     }
 
