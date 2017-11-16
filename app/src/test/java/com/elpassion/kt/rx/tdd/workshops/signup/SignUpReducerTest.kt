@@ -4,14 +4,16 @@ import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.Observable.just
 import io.reactivex.observers.TestObserver
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
-import org.junit.Assert.assertFalse
 import org.junit.Assert
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SignUpReducerTest {
@@ -20,6 +22,7 @@ class SignUpReducerTest {
     private val cameraSubject = MaybeSubject.create<String>()
     private val apiSubject = SingleSubject.create<Boolean>()
     private val permissionSubject = SingleSubject.create<Boolean>()
+    private val signUpApi: SignUp.Api = mock()
     private lateinit var passedLogin: String
     private val api: (String) -> SingleSubject<Boolean> = {
         passedLogin = it
@@ -28,7 +31,8 @@ class SignUpReducerTest {
     private val state: TestObserver<SignUp.State> = SignUpReducer(
             api,
             { cameraSubject },
-            { permissionSubject }
+            { permissionSubject },
+            signUpApi
     ).invoke(events).test()
 
     @Test
@@ -100,6 +104,20 @@ class SignUpReducerTest {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("123456789"))
         assertFalse(permissionSubject.hasObservers())
     }
+
+    @Test
+    fun shouldPassLoginAndPhotoToSignUpApiOnRegisterEvent() {
+        typeLoginAndTakePhoto()
+        events.accept(SignUp.RegisterEvent)
+        verify(signUpApi).register("login", "photo uri")
+    }
+
+    private fun typeLoginAndTakePhoto() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(true)
+        cameraSubject.onSuccess("photo uri")
+    }
 }
 
 interface SignUp {
@@ -124,17 +142,27 @@ interface SignUp {
             object Empty : State()
         }
     }
+
+    object RegisterEvent
+    interface Api {
+        fun register(login: String, photoUri: String)
+    }
 }
 
 class SignUpReducer(private val api: (String) -> SingleSubject<Boolean>,
                     private val camera: () -> MaybeSubject<String>,
-                    private val cameraPermission: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
+                    private val cameraPermission: () -> SingleSubject<Boolean>,
+                    private val signUpApi: SignUp.Api) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> =
             Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
 
     private fun takePhotos(events: Events) = events
             .ofType(SignUp.Photo.TakePhotoEvent::class.java)
+            .map {
+                signUpApi.register("login", "photo uri")
+                it
+            }
             .flatMapSingle { cameraPermission() }
             .filter { it }
             .flatMap { camera().toObservable() }
@@ -153,7 +181,7 @@ class SignUpReducer(private val api: (String) -> SingleSubject<Boolean>,
                 .startWith(SignUp.LoginValidation.State.IDLE)
     }
 
-    private fun validateLoginWithApi(login : String): Observable<SignUp.LoginValidation.State> =
+    private fun validateLoginWithApi(login: String): Observable<SignUp.LoginValidation.State> =
             api(login)
                     .map {
                         if (it) {
