@@ -3,4 +3,5 @@
     <string name="login_validation_idle">a</string>
     <string name="login_validation_loading">verifying</string>
     <string name="login_validation_available">available</string>
+    <string name="login_validation_taken">taken</string>
 </resources>

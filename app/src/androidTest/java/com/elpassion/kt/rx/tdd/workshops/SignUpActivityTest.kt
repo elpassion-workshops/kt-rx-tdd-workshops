@@ -51,4 +51,11 @@ class SignUpActivityTest {
         apiSubject.onSuccess(true)
         onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_available)
     }
+
+    @Test
+    fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
+        onId(R.id.loginInput).typeText("a")
+        apiSubject.onSuccess(false)
+        onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_taken)
+    }
 }

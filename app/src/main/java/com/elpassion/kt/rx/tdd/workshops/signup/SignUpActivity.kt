@@ -20,6 +20,7 @@ class SignUpActivity : RxActivity() {
                     when (it.loginValidation) {
                         SignUp.LoginValidation.State.LOADING -> loginValidationIndicator.setText(R.string.login_validation_loading)
                         SignUp.LoginValidation.State.LOGIN_AVAILABLE -> loginValidationIndicator.setText(R.string.login_validation_available)
+                        SignUp.LoginValidation.State.LOGIN_TAKEN -> loginValidationIndicator.setText(R.string.login_validation_taken)
                     }
                 }
     }
