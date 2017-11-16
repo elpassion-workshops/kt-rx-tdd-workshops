@@ -5,12 +5,15 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
+import io.reactivex.Observable.just
+import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpRelay().invoke(events).test()
+    private val apiSubject = SingleSubject.create<Boolean>()
+    private val state = SignUpRelay({ apiSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -28,6 +31,13 @@ class SignUpReducerTest {
         events.accept(SignUp.LoginValidation.LoginChangedEvent(""))
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.IDLE }
     }
+
+    @Test
+    fun shouldShowSuccessOnLoginAvailable() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("super awesome login"))
+        apiSubject.onSuccess(true)
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.AVAILABLE }
+    }
 }
 
 interface SignUp {
@@ -39,18 +49,21 @@ interface SignUp {
         enum class State {
             IDLE,
             LOADING,
+            AVAILABLE,
         }
     }
 }
 
-class SignUpRelay : Reducer<SignUp.State> {
+class SignUpRelay(private val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
-                .map {
+                .switchMap {
                     if (it.login.isEmpty()) {
-                        SignUp.LoginValidation.State.IDLE
+                        just(SignUp.LoginValidation.State.IDLE)
                     } else {
-                        SignUp.LoginValidation.State.LOADING
+                        api().map { SignUp.LoginValidation.State.AVAILABLE }
+                                .toObservable()
+                                .startWith(SignUp.LoginValidation.State.LOADING)
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
