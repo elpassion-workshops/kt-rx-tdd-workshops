@@ -85,11 +85,6 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldNotRequestPermissionWithoutEvent() {
-        assertFalse(permissionSubject.hasObservers())
-    }
-
-    @Test
     fun shouldNotRequestPermissionWithoutEventToTakePhoto() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("123456789"))
         assertFalse(permissionSubject.hasObservers())
