@@ -110,4 +110,14 @@ class SignUpReducerTest {
         events.accept(SignUp.RegisterEvent)
         verify(signUpApi).invoke("login", "photo uri")
     }
+
+    @Test
+    fun shouldNotInvokeSignUpApiWithoutExplicitAction() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        apiSubject.onSuccess(true)
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(Unit)
+        cameraSubject.onSuccess("photo uri")
+        verify(signUpApi, never()).invoke(any(), any())
+    }
 }
