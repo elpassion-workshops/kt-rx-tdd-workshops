@@ -9,12 +9,12 @@ interface SignUp {
             val showLoader: Boolean)
 
     interface LoginValidation {
-        enum class State {
-            IDLE,
-            LOADING,
-            LOGIN_AVAILABLE,
-            LOGIN_TAKEN,
-            ERROR,
+        sealed class State {
+            object IDLE : LoginValidation.State()
+            object LOADING : LoginValidation.State()
+            data class LoginAvailable(val login: String) : LoginValidation.State()
+            object LOGIN_TAKEN : LoginValidation.State()
+            object ERROR : LoginValidation.State()
         }
 
         data class LoginChangedEvent(val login: String)

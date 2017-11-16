@@ -44,7 +44,7 @@ class SignUpReducerTest {
     fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onSuccess(true)
-        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LOGIN_AVAILABLE }
+        state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.LoginAvailable("login") }
     }
 
     @Test
