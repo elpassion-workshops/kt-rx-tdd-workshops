@@ -84,4 +84,9 @@ class SignUpActivityTest {
         cameraSubject.onSuccess(uriString)
         onId(R.id.photo).check(matches(HasSameBitmap(bitmap)))
     }
+
+    @Test
+    fun shouldTakePhotoButtonHasProperText() {
+        onId(R.id.takePhoto).hasText(R.string.take_photo_button)
+    }
 }

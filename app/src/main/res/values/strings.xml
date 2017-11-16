@@ -5,4 +5,5 @@
     <string name="login_validation_available">available</string>
     <string name="login_validation_taken">taken</string>
     <string name="login_validation_error">error</string>
+    <string name="take_photo_button">set profile photo</string>
 </resources>
