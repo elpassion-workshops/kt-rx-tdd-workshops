@@ -4,7 +4,9 @@ import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.never
 import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.Observable.just
@@ -112,6 +114,12 @@ class SignUpReducerTest {
         verify(signUpApi).register("login", "photo uri")
     }
 
+    @Test
+    fun shouldNotSignUpWithoutRegisterEvent() {
+        typeLoginAndTakePhoto()
+        verify(signUpApi, never()).register(any(), any())
+    }
+
     private fun typeLoginAndTakePhoto() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         events.accept(SignUp.Photo.TakePhotoEvent)
@@ -154,15 +162,17 @@ class SignUpReducer(private val api: (String) -> SingleSubject<Boolean>,
                     private val cameraPermission: () -> SingleSubject<Boolean>,
                     private val signUpApi: SignUp.Api) : Reducer<SignUp.State> {
 
-    override fun invoke(events: Events): Observable<SignUp.State> =
-            Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
+    override fun invoke(events: Events): Observable<SignUp.State> {
+        events.ofType(SignUp.RegisterEvent::class.java)
+                .map {
+                    signUpApi.register("login", "photo uri")
+                    it
+                }.subscribe()
+        return Observables.combineLatest(validateLogin(events), takePhotos(events), SignUp::State)
+    }
 
     private fun takePhotos(events: Events) = events
             .ofType(SignUp.Photo.TakePhotoEvent::class.java)
-            .map {
-                signUpApi.register("login", "photo uri")
-                it
-            }
             .flatMapSingle { cameraPermission() }
             .filter { it }
             .flatMap { camera().toObservable() }
