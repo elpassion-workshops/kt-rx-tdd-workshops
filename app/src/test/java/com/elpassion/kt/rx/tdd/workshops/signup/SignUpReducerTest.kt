@@ -6,14 +6,17 @@ import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
 import io.reactivex.Observable.just
+import io.reactivex.observers.TestObserver
+import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
+    private val cameraSubject = MaybeSubject.create<String>()
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
+    private val state: TestObserver<SignUp.State> = SignUpReducer({ apiSubject }, { cameraSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleAtTheBegging() {
@@ -52,10 +55,18 @@ class SignUpReducerTest {
         apiSubject.onError(RuntimeException())
         state.assertLastValueThat { loginValidation == SignUp.LoginValidation.State.ERROR }
     }
+
+
+    @Test
+    fun shouldTakePhotoOnTakePhoto() {
+        events.accept(SignUp.Photo.TakePhotoEvent)
+        cameraSubject.onSuccess("photo uri")
+        state.assertLastValueThat { photo == SignUp.Photo.State.Taken("photo uri") }
+    }
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(val loginValidation: LoginValidation.State, val photo: Photo.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
@@ -68,9 +79,16 @@ interface SignUp {
             ERROR,
         }
     }
+
+    interface Photo {
+        object TakePhotoEvent
+        sealed class State {
+            data class Taken(val photo: String) : State()
+        }
+    }
 }
 
-class SignUpReducer(private val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: () -> SingleSubject<Boolean>, camera: () -> MaybeSubject<String>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
@@ -81,7 +99,7 @@ class SignUpReducer(private val api: () -> SingleSubject<Boolean>) : Reducer<Sig
                     }
                 }
                 .startWith(SignUp.LoginValidation.State.IDLE)
-                .map { SignUp.State(it) }
+                .map { SignUp.State(it, SignUp.Photo.State.Taken("photo uri")) }
     }
 
     private fun validateLoginWithApi(): Observable<SignUp.LoginValidation.State> =
