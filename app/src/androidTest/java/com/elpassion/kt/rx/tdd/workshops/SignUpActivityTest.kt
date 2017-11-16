@@ -58,4 +58,11 @@ class SignUpActivityTest {
         apiSubject.onSuccess(false)
         onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_taken)
     }
+
+    @Test
+    fun shouldShowLoginValidationErrorWhenApiReturnsError() {
+        onId(R.id.loginInput).typeText("a")
+        apiSubject.onError(RuntimeException())
+        onId(R.id.loginValidationIndicator).hasText(R.string.login_validation_error)
+    }
 }
