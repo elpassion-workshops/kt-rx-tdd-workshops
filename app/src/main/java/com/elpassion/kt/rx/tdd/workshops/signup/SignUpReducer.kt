@@ -3,6 +3,7 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.LoginValidation.ValidationResult.IDLE
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.LoginValidation.ValidationResult.TAKEN
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
@@ -31,7 +32,7 @@ class SignUpReducer(private val api: (login: String) -> Single<Boolean>,
 
     private fun registerButtonReducer(loginAndPhoto: Observable<Pair<SignUp.LoginValidation.State, SignUp.Photo.State>>): Observable<Boolean> {
         return loginAndPhoto
-                .map { (login, _) -> login.validationResult != IDLE }
+                .map { (login, _) -> login.validationResult != IDLE && login.validationResult != TAKEN }
                 .startWith(false)
     }
 

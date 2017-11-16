@@ -152,9 +152,27 @@ class SignUpReducerTest {
         state.assertLastValueThat { isRegisterEnabled }
     }
 
-    private fun typeLoginAndTakePhoto(login: String = "login", photoUri: String = "photo uri") {
+    @Test
+    fun shouldRegisterButtonBeDisabledBeforeAddingPhoto() {
+        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
+        state.assertLastValueThat { !isRegisterEnabled }
+    }
+
+    @Test
+    fun shouldRegisterButtonBeDisabledWhenPhotoAddedButNoLogin() {
+        takePhoto()
+        state.assertLastValueThat { !isRegisterEnabled }
+    }
+
+    @Test
+    fun shouldRegisterButtonBeDisabledWhenPhotoAndLoginAddedButLoginIsTaken() {
+        typeLoginAndTakePhoto(isLoginAvailable = false)
+        state.assertLastValueThat { !isRegisterEnabled }
+    }
+
+    private fun typeLoginAndTakePhoto(login: String = "login", photoUri: String = "photo uri", isLoginAvailable: Boolean = true) {
         events.accept(SignUp.LoginValidation.LoginChangedEvent(login))
-        apiSubject.onSuccess(true)
+        apiSubject.onSuccess(isLoginAvailable)
         takePhoto(photoUri)
     }
 
