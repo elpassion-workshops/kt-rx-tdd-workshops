@@ -1,13 +1,8 @@
 package com.elpassion.kt.rx.tdd.workshops
 
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.support.test.espresso.assertion.ViewAssertions.matches
-import android.support.test.espresso.matcher.BoundedMatcher
 import android.support.test.rule.ActivityTestRule
 import android.support.test.runner.AndroidJUnit4
-import android.view.View
-import android.widget.ImageView
 import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpActivity
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUpDI
@@ -16,7 +11,6 @@ import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
-import org.hamcrest.Description
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -89,15 +83,5 @@ class SignUpActivityTest {
         permissionSubject.onSuccess(Unit)
         cameraSubject.onSuccess(uriString)
         onId(R.id.photo).check(matches(HasSameBitmap(bitmap)))
-    }
-}
-
-class HasSameBitmap(private val expectedBitmap: Bitmap) : BoundedMatcher<View, ImageView>(ImageView::class.java) {
-    override fun describeTo(description: Description) {
-        description.appendText("has bitmap does not match expected bitmap")
-    }
-
-    override fun matchesSafely(item: ImageView): Boolean {
-        return (item.drawable as? BitmapDrawable)?.bitmap?.sameAs(expectedBitmap) ?: false
     }
 }
