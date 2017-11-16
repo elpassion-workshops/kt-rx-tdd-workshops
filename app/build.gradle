@@ -52,7 +52,6 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation group: 'com.nhaarman', name: 'mockito-kotlin-kt1.1', version: mockito_kotlin_version
     testImplementation group: 'com.elpassion.android.commons', name: 'rxjava2-test', version: el_common_version
-    testImplementation 'com.github.elpassion:MiniSpek:master-SNAPSHOT'
 
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
