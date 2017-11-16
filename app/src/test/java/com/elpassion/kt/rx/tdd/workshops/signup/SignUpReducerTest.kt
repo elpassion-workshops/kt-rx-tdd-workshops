@@ -102,33 +102,29 @@ class SignUpReducerTest {
 
     @Test
     fun shouldSendLoginAndPhotoToSignUpApiOnSend() {
-        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
-        apiSubject.onSuccess(true)
-        events.accept(SignUp.Photo.TakePhotoEvent)
-        permissionSubject.onSuccess(Unit)
-        cameraSubject.onSuccess("photo uri")
+        typeLoginAndTakePhoto()
         events.accept(SignUp.RegisterEvent)
         verify(signUpApi).invoke("login", "photo uri")
     }
 
     @Test
     fun shouldNotInvokeSignUpApiWithoutExplicitAction() {
-        events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
-        apiSubject.onSuccess(true)
-        events.accept(SignUp.Photo.TakePhotoEvent)
-        permissionSubject.onSuccess(Unit)
-        cameraSubject.onSuccess("photo uri")
+        typeLoginAndTakePhoto()
         verify(signUpApi, never()).invoke(any(), any())
     }
 
     @Test
     fun shouldShowLoaderAfterSendingSignUpData() {
+        typeLoginAndTakePhoto()
+        events.accept(SignUp.RegisterEvent)
+        state.assertLastValueThat { showLoader }
+    }
+
+    private fun typeLoginAndTakePhoto() {
         events.accept(SignUp.LoginValidation.LoginChangedEvent("login"))
         apiSubject.onSuccess(true)
         events.accept(SignUp.Photo.TakePhotoEvent)
         permissionSubject.onSuccess(Unit)
         cameraSubject.onSuccess("photo uri")
-        events.accept(SignUp.RegisterEvent)
-        state.assertLastValueThat { showLoader }
     }
 }
