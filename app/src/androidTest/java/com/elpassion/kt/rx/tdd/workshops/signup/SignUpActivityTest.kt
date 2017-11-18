@@ -30,4 +30,9 @@ class SignUpActivityTest {
         onId(R.id.login_validation_label).hasText(R.string.loginValidationIdle)
     }
 
+    @Test
+    fun shouldShowLoadingValidationState() {
+        onId(R.id.login_input).typeText("login")
+        onId(R.id.login_validation_label).hasText(R.string.loginValidationLoading)
+    }
 }

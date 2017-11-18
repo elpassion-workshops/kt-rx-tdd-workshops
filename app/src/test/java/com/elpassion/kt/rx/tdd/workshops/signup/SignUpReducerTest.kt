@@ -1,15 +1,9 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
-import com.elpassion.kt.rx.tdd.workshops.common.Events
-import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
-import io.reactivex.Maybe
-import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -31,7 +25,7 @@ class SignUpReducerTest {
         }.thenReturn(cameraSubject)
     }
 
-    private val state = SignUpReducer(apiMock,cameraMock ,{permissionsSubject}).invoke(events).test()
+    private val state = SignUpReducer(apiMock, cameraMock, { permissionsSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -112,70 +106,4 @@ class SignUpReducerTest {
     }
 }
 
-class SignUpReducer(val api: (login: String) -> Single<Boolean>,
-                    val cameraApi: () -> Maybe<String>, val permisionApi: () -> Single<Boolean>
-) : Reducer<SignUp.State> {
-    override fun invoke(events: Events): Observable<SignUp.State> =
-            Observables.combineLatest(loginChangedEvents(events), takePhotoEvents(events), SignUp::State)
 
-    private fun takePhotoEvents(events: Events): Observable<Photo.State> {
-        return events.ofType(Photo.TakePhotoEvent::class.java)
-                .switchMapSingle {
-                    permisionApi.invoke()
-                }
-                .filter { it }
-                .flatMapMaybe {
-                    cameraApi.invoke()
-                }
-                .map<Photo.State> { Photo.State.Photo(it) }
-                .startWith(Photo.State.Empty)
-    }
-
-    private fun loginChangedEvents(events: Events): Observable<LoginValidation.State> {
-        return events.ofType(LoginValidation.LoginChangedEvent::class.java)
-                .switchMap { (login) ->
-                    if (login.isEmpty()) {
-                        Observable.just(LoginValidation.State.IDLE)
-                    } else {
-                        api.invoke(login)
-                                .toObservable()
-                                .map {
-                                    if (it) LoginValidation.State.AVAILABLE
-                                    else LoginValidation.State.ISTAKEN
-                                }
-                                .onErrorReturn { LoginValidation.State.APIFAIL }
-                                .startWith(LoginValidation.State.IN_PROGRESS)
-                    }
-                }
-                .startWith(LoginValidation.State.IDLE)
-    }
-
-}
-
-
-interface SignUp {
-
-    interface Photo {
-        object TakePhotoEvent
-
-        sealed class State {
-            object Empty : State()
-            data class Photo(val uri: String) : State()
-        }
-    }
-
-    data class State(val loginValidation: LoginValidation.State, val photoState: Photo.State)
-
-
-    interface LoginValidation {
-        data class LoginChangedEvent(val login: String)
-
-        enum class State {
-            IDLE,
-            IN_PROGRESS,
-            AVAILABLE,
-            ISTAKEN,
-            APIFAIL
-        }
-    }
-}
