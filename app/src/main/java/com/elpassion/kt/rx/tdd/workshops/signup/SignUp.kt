@@ -1,5 +1,6 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import io.reactivex.Maybe
 import io.reactivex.Single
 
 interface SignUp {
@@ -31,5 +32,7 @@ interface SignUp {
     companion object {
 
         lateinit var api : (String) -> Single<Boolean>
+        lateinit var cameraApi : () -> Maybe<String>
+        lateinit var permissionApi: () -> Single<Boolean>
     }
 }
