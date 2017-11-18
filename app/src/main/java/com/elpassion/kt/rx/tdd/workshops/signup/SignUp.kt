@@ -1,5 +1,8 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import io.reactivex.Scheduler
+import io.reactivex.Single
+
 interface SignUp {
     data class State(val loginValidation: LoginValidation.State, val photoValidation: PhotoValidation.State)
 
@@ -23,5 +26,10 @@ interface SignUp {
             object EMPTY : State()
             data class RETURNED(val path: String) : State()
         }
+    }
+
+    companion object {
+        lateinit var api: (String) -> Single<Boolean>
+        lateinit var debounceScheduler: Scheduler
     }
 }

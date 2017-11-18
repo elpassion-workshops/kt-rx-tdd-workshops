@@ -7,13 +7,24 @@ import org.junit.Rule
 import org.junit.Test
 import com.elpassion.android.commons.espresso.onId
 import com.elpassion.android.commons.espresso.replaceText
+import io.reactivex.schedulers.TestScheduler
+import io.reactivex.subjects.SingleSubject
+import java.util.concurrent.TimeUnit
 
 
 class SignUpActivityTest {
 
+    private val apiSubject = SingleSubject.create<Boolean>()
+    private val debounceScheduler = TestScheduler()
+
     @JvmField
     @Rule
-    val rule = ActivityTestRule<SignUpActivity>(SignUpActivity::class.java)
+    val rule = object : ActivityTestRule<SignUpActivity>(SignUpActivity::class.java) {
+        override fun beforeActivityLaunched() {
+            SignUp.api = { apiSubject }
+            SignUp.debounceScheduler = debounceScheduler
+        }
+    }
 
     @Test
     fun shouldHaveLoginInput() {
@@ -30,5 +41,13 @@ class SignUpActivityTest {
     fun shouldShowLoadingValidationState() {
         onId(R.id.singUpLogin).replaceText("a")
         onId(R.id.signUpProgress).hasText(R.string.loading)
+    }
+
+    @Test
+    fun shouldShowLoginAvailableValidationState() {
+        onId(R.id.singUpLogin).replaceText("a")
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
+        apiSubject.onSuccess(true)
+        onId(R.id.signUpProgress).hasText(R.string.available)
     }
 }
