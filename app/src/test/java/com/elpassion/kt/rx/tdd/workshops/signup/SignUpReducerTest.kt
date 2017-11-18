@@ -8,6 +8,7 @@ import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -21,13 +22,14 @@ class SignUpReducerTest {
     private val events = PublishRelay.create<Any>()
     private val apiSubject = SingleSubject.create<Boolean>()
     private val cameraSubject = MaybeSubject.create<String>()
+    private val permissionsSubject = SingleSubject.create<Boolean>()
     private val apiMock = mock<(String) -> SingleSubject<Boolean>> {
         on {
             invoke(any())
         }.thenReturn(apiSubject)
     }
 
-    private val state = SignUpReducer(apiMock, { cameraSubject }).invoke(events).test()
+    private val state = SignUpReducer(apiMock, { cameraSubject },{permissionsSubject}).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -81,22 +83,35 @@ class SignUpReducerTest {
     @Test
     fun shouldCallCameraWhenTakingPhoto() {
         events.accept(Photo.TakePhotoEvent)
+        permissionsSubject.onSuccess(true)
         cameraSubject.onSuccess("photoURI")
         state.assertLastValueThat { photoState == SignUp.Photo.State.Photo("photoURI") }
     }
 
-
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
+        events.accept(Photo.TakePhotoEvent)
+        permissionsSubject.onSuccess(false)
+        cameraSubject.onSuccess("photoURI")
+        state.assertLastValueThat { photoState == SignUp.Photo.State.Empty }
+    }
 }
 
 class SignUpReducer(val api: (login: String) -> Single<Boolean>,
-                    val cameraApi: () -> Maybe<String>
+                    val cameraApi: () -> Maybe<String>, val permisionApi: () -> Single<Boolean>
 ) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> =
             Observables.combineLatest(loginChangedEvents(events), takePhotoEvents(events), SignUp::State)
 
     private fun takePhotoEvents(events: Events): Observable<Photo.State> {
         return events.ofType(Photo.TakePhotoEvent::class.java)
-                .switchMap { cameraApi.invoke().toObservable() }
+                .switchMapSingle {
+                    permisionApi.invoke()
+                }
+                .filter { it }
+                .flatMapMaybe {
+                    cameraApi.invoke()
+                }
                 .map<Photo.State> { Photo.State.Photo(it) }
                 .startWith(Photo.State.Empty)
     }
