@@ -54,6 +54,14 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent("b"))
         verify(loginApi).checkLogin("b")
     }
+
+    @Test
+    fun shouldShowErrorWhenApiReturnsError() {
+        events.accept(LoginValidation.LoginChangedEvent("b"))
+        loginApiSubject.onError(Throwable("Error"))
+        state.assertLastValueThat { loginValidation == LoginValidation.State.API_ERROR }
+
+    }
 }
 
 class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
@@ -66,6 +74,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
                     } else {
                         api.checkLogin(it.login)
                                 .map { if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.NOT_AVAILABLE }
+                                .onErrorReturn { LoginValidation.State.API_ERROR }
                                 .toObservable()
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
@@ -85,7 +94,8 @@ interface SignUp {
             IDLE,
             IN_PROGRESS,
             AVAILABLE,
-            NOT_AVAILABLE
+            NOT_AVAILABLE,
+            API_ERROR
         }
     }
 }
