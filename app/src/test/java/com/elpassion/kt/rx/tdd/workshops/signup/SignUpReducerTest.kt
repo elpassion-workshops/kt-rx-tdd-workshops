@@ -84,16 +84,16 @@ class SignUpReducerTest {
 
 class SignUpReducer(private val loginApi: () -> Single<Boolean>,
                     private val camera: () -> Maybe<String>,
-                    private val permissions: () -> Single<Boolean>) : Reducer<SignUp.State> {
-    
+                    private val camerPermission: () -> Single<Boolean>) : Reducer<SignUp.State> {
+
 
     override fun invoke(events: Events): Observable<SignUp.State> {
         return Observables.combineLatest(handleLoginChangedEvents(events), handleTakePhotoEvents(), SignUp::State)
     }
 
     private fun handleTakePhotoEvents(): Observable<Photo.State> =
-            permissions()
-                    .filter { it }
+            camerPermission()
+                    .filter { hasCameraPermission -> hasCameraPermission }
                     .flatMapObservable {
                         camera()
                                 .map { Photo.State.EMPTY }
