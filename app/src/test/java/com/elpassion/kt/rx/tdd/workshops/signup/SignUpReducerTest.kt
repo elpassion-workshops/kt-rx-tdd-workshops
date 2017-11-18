@@ -8,7 +8,6 @@ import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Observable
 import io.reactivex.Scheduler
-import io.reactivex.Single
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
@@ -155,41 +154,4 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System, v
     }
 }
 
-interface SignUp {
-    data class State(val loginValidation: LoginValidation.State, val addPhoto: AddPhoto.State)
 
-    interface LoginValidation {
-        data class LoginChangedEvent(val login: String)
-
-        enum class State {
-            IDLE,
-            IN_PROGRESS,
-            AVAILABLE,
-            NOT_AVAILABLE,
-            API_ERROR
-        }
-    }
-
-    interface AddPhoto {
-
-        object TakePhotoEvent
-
-        sealed class State {
-            object EMPTY : State()
-            data class PhotoTaken(val uri: String) : State()
-        }
-    }
-}
-
-interface LoginApi {
-    fun checkLogin(login: String): Single<Boolean>
-}
-
-
-interface Camera {
-    fun call(): Single<String>
-}
-
-interface System {
-    fun cameraPermission(): Single<Boolean>
-}
