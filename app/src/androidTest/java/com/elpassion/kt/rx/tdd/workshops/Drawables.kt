@@ -11,7 +11,7 @@ import java.io.OutputStream
 
 fun createTestBitmap(): Pair<String, Bitmap> {
     val context = InstrumentationRegistry.getTargetContext()
-    val icon: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+    val icon: Bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.any_drawable)
     val uriString = context.save(icon)
     val bitmap = context.loadImageFromStorage(Uri.parse(uriString))
     return Pair(uriString, bitmap)

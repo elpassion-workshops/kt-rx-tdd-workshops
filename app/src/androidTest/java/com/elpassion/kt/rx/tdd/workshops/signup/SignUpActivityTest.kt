@@ -4,16 +4,19 @@ import android.support.test.rule.ActivityTestRule
 import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.SignUpDI
+import com.elpassion.kt.rx.tdd.workshops.createTestBitmap
+import com.elpassion.kt.rx.tdd.workshops.hasBitmap
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
+import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Rule
 import org.junit.Test
 
 class SignUpActivityTest {
 
-    private val cameraSubject = SingleSubject.create<String>()
+    private val cameraSubject = MaybeSubject.create<String>()
 
     private val permissionSubject = SingleSubject.create<Boolean>()
 
@@ -79,7 +82,8 @@ class SignUpActivityTest {
         onId(R.id.takePhoto).click()
 
         permissionSubject.onSuccess(true)
-        cameraSubject.onSuccess("uri://test")
-        onId(R.id.takePhoto).isNotDisplayed()
+        val testPair = createTestBitmap()
+        cameraSubject.onSuccess(testPair.first)
+        onId(R.id.imageView).hasBitmap(testPair.second)
     }
 }

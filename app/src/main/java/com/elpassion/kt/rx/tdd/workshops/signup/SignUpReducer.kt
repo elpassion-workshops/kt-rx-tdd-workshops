@@ -2,12 +2,13 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.Observables
 
 class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
-                    private val cameraApi: () -> Single<String>,
+                    private val cameraApi: () -> Maybe<String>,
                     private val permission: () -> Single<Boolean>) : Reducer<SignUp.State> {
 
     override fun invoke(events: Events): Observable<SignUp.State> {
@@ -17,7 +18,7 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
     private fun photoReducer(): Observable<SignUp.Photo.State> =
             permission()
                     .filter { it }
-                    .flatMapSingle {
+                    .flatMap {
                         cameraApi
                                 .invoke()
                                 .map<SignUp.Photo.State>(SignUp.Photo.State::Captured)
