@@ -1,14 +1,9 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
-import com.elpassion.kt.rx.tdd.workshops.common.Events
-import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
-import io.reactivex.Observable
-import io.reactivex.Scheduler
-import io.reactivex.rxkotlin.Observables
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -110,47 +105,6 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent("bc"))
         scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         verify(loginApi).checkLogin(any())
-    }
-}
-
-class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System, val scheduler: Scheduler) : Reducer<SignUp.State> {
-    override fun invoke(events: Events): Observable<SignUp.State> {
-
-        return Observables.combineLatest(loginValidationReducer(events), photoValidationReducer(events))
-                .map { (loginState, photoState) -> State(loginState, photoState) }
-    }
-
-    private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
-        return events
-                .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .debounce(1, TimeUnit.SECONDS, scheduler)
-                .switchMap(this::processUserLogin)
-                .startWith(LoginValidation.State.IDLE)
-    }
-
-    private fun photoValidationReducer(events: Events): Observable<AddPhoto.State> {
-        return events
-                .ofType(AddPhoto.TakePhotoEvent::class.java)
-                .flatMapSingle { system.cameraPermission() }
-                .filter { it }
-                .switchMap {
-                    camera.call()
-                            .map { AddPhoto.State.PhotoTaken(it) as AddPhoto.State }
-                            .toObservable()
-                }
-                .startWith(AddPhoto.State.EMPTY)
-    }
-
-    private fun processUserLogin(event: LoginValidation.LoginChangedEvent) = with(event) {
-        if (login.isEmpty()) {
-            Observable.just(LoginValidation.State.IDLE)
-        } else {
-            api.checkLogin(login)
-                    .toObservable()
-                    .map { if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.NOT_AVAILABLE }
-                    .onErrorReturn { LoginValidation.State.API_ERROR }
-                    .startWith(LoginValidation.State.IN_PROGRESS)
-        }
     }
 }
 
