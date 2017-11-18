@@ -50,4 +50,20 @@ class SignUpActivityTest {
         apiSubject.onSuccess(true)
         onId(R.id.signUpProgress).hasText(R.string.available)
     }
+
+    @Test
+    fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
+        onId(R.id.singUpLogin).replaceText("a")
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
+        apiSubject.onSuccess(false)
+        onId(R.id.signUpProgress).hasText(R.string.taken)
+    }
+
+    @Test
+    fun shouldShowLoginValidationErrorWhenApiReturnsError() {
+        onId(R.id.singUpLogin).replaceText("a")
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
+        apiSubject.onError(RuntimeException())
+        onId(R.id.signUpProgress).hasText(R.string.api_error)
+    }
 }

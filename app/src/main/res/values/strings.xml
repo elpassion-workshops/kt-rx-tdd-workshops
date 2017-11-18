@@ -3,4 +3,6 @@
     <string name="loading">loading</string>
     <string name="idle">Idle</string>
     <string name="available">Available</string>
+    <string name="taken">Taken</string>
+    <string name="api_error">API error</string>
 </resources>

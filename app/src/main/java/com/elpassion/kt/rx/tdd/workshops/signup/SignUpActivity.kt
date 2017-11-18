@@ -19,6 +19,8 @@ class SignUpActivity : RxActivity() {
                     when (it.loginValidation) {
                         SignUp.LoginValidation.State.IN_PROGRESS -> signUpProgress.setText(R.string.loading)
                         SignUp.LoginValidation.State.AVAILABLE -> signUpProgress.setText(R.string.available)
+                        SignUp.LoginValidation.State.TAKEN -> signUpProgress.setText(R.string.taken)
+                        SignUp.LoginValidation.State.ERROR -> signUpProgress.setText(R.string.api_error)
                     }
                 }
     }
