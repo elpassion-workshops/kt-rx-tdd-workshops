@@ -11,7 +11,7 @@ import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
-import io.reactivex.functions.BiFunction
+import io.reactivex.rxkotlin.Observables.combineLatest
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -92,13 +92,8 @@ class SignUpReducerTest {
 }
 
 class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Maybe<String>) : Reducer<SignUp.State> {
-    override fun invoke(events: Events): Observable<SignUp.State> {
-        return Observable
-                .combineLatest(loginValidationReducer(events), photoValidationReducer(events),
-                        BiFunction<LoginValidation.State, PhotoValidation.State, SignUp.State> {
-                            login, photo ->  SignUp.State(login, photo)}
-                )
-    }
+    override fun invoke(events: Events): Observable<SignUp.State> =
+            combineLatest(loginValidationReducer(events), photoValidationReducer(events), SignUp::State)
 
     private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
