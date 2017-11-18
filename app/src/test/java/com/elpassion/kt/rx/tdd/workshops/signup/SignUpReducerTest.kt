@@ -12,6 +12,7 @@ import org.junit.Test
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
+    private val apiSubject = SingleSubject.create<Boolean>()
     private val state = SignUpReducer({ apiSubject }).invoke(events).test()
 
     @Test
@@ -24,8 +25,6 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent("a"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
-
-    private val apiSubject = SingleSubject.create<Boolean>()
 
     @Test
     fun shouldLoginValidationStateAvailableWhenApiReturnsTrue() {
