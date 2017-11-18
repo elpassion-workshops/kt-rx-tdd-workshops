@@ -4,4 +4,5 @@
     <string name="login_indicator_idle">Idle</string>
     <string name="login_indicator_loading">Loading</string>
     <string name="login_indicator_available">Available</string>
+    <string name="login_indicator_taken">Taken</string>
 </resources>

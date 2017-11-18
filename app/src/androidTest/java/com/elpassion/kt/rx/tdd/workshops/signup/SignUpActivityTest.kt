@@ -48,4 +48,11 @@ class SignUpActivityTest {
         loginApiSubject.onSuccess(true)
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_available)
     }
+
+    @Test
+    fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
+        onId(R.id.loginInput).typeText("login")
+        loginApiSubject.onSuccess(false)
+        onId(R.id.loginIndicator).hasText(R.string.login_indicator_taken)
+    }
 }

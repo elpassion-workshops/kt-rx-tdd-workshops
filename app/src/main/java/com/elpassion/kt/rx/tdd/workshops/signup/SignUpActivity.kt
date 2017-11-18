@@ -27,6 +27,7 @@ class SignUpActivity : RxActivity() {
             SignUp.LoginValidation.State.IDLE -> loginIndicator.setText(R.string.login_indicator_idle)
             SignUp.LoginValidation.State.IN_PROGRESS -> loginIndicator.setText(R.string.login_indicator_loading)
             SignUp.LoginValidation.State.AVAILABLE -> loginIndicator.setText(R.string.login_indicator_available)
+            SignUp.LoginValidation.State.TAKEN -> loginIndicator.setText(R.string.login_indicator_taken)
         }
     }
 
