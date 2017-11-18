@@ -15,13 +15,9 @@ import org.junit.Test
 class SignUpReducerTest {
 
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val api = mock<(String) -> Single<Boolean>>().apply {
-        whenever(this.invoke(any())).thenReturn(apiSubject)
-    }
+    private val api = mock<(String) -> Single<Boolean>> { on { invoke(any()) } doReturn apiSubject }
     private val cameraSubject = SingleSubject.create<String>()
-    private val cameraApi = mock<(() -> Single<String>)>().apply {
-        whenever(this.invoke()).thenReturn(cameraSubject)
-    }
+    private val cameraApi = mock<(() -> Single<String>)> { on { invoke() } doReturn cameraSubject }
 
     private val events = PublishRelay.create<Any>()
 
@@ -111,7 +107,7 @@ class SignUpReducerTest {
 class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
                     private val cameraApi: () -> Single<String>,
                     private val permission: () -> Single<Boolean>
-                    ) : Reducer<SignUp.State> {
+) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return Observables.combineLatest(loginValidationReducer(events), photoReducer(), SignUp::State)
     }
@@ -122,7 +118,7 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
                     .flatMapSingle {
                         cameraApi
                                 .invoke()
-                                .map<Photo.State> (Photo.State::Captured )
+                                .map<Photo.State>(Photo.State::Captured)
                     }.toObservable()
                     .startWith(Photo.State.Empty)
 
