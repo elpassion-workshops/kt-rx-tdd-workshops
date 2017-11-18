@@ -1,16 +1,11 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
-import com.elpassion.kt.rx.tdd.workshops.common.Events
-import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Maybe
-import io.reactivex.Observable
-import io.reactivex.Scheduler
 import io.reactivex.Single
-import io.reactivex.rxkotlin.Observables.combineLatest
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
@@ -140,74 +135,3 @@ class SignUpReducerTest {
     }
 }
 
-class SignUpReducer(
-        val api: (String) -> Single<Boolean>,
-        val camera: () -> Maybe<String>,
-        val permission: () -> Single<Boolean>,
-        val debounceScheduler: Scheduler) : Reducer<SignUp.State> {
-
-    override fun invoke(events: Events): Observable<SignUp.State> =
-            combineLatest(loginValidationReducer(events), photoValidationReducer(events), SignUp::State)
-
-    private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
-        return events
-                .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .switchMap { event ->
-                    if (event.login.isEmpty()) {
-                        Observable.just(LoginValidation.State.IDLE)
-                    } else {
-                        Single.timer(5, TimeUnit.SECONDS, debounceScheduler)
-                                .flatMapObservable {
-                                    api.invoke(event.login)
-                                            .map {
-                                                if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.TAKEN
-                                            }
-                                            .toObservable()
-                                            .onErrorReturnItem(LoginValidation.State.ERROR)
-                                }
-                                .startWith(LoginValidation.State.IN_PROGRESS)
-                    }
-                }
-                .startWith(LoginValidation.State.IDLE)
-    }
-
-    private fun photoValidationReducer(events: Events): Observable<PhotoValidation.State> {
-        return events
-                .ofType(PhotoValidation.PhotoEvent::class.java)
-                .flatMapMaybe<SignUp.PhotoValidation.State> {
-                    permission.invoke()
-                            .filter { it }
-                            .flatMap {
-                                camera.invoke().map { PhotoValidation.State.RETURNED(it) }
-                            }
-                }
-                .startWith(PhotoValidation.State.EMPTY)
-    }
-
-}
-
-interface SignUp {
-    data class State(val loginValidation: LoginValidation.State, val photoValidation: PhotoValidation.State)
-
-    interface LoginValidation {
-        data class LoginChangedEvent(val login: String)
-
-        enum class State {
-            IDLE,
-            IN_PROGRESS,
-            AVAILABLE,
-            TAKEN,
-            ERROR
-        }
-    }
-
-    interface PhotoValidation {
-
-        class PhotoEvent
-
-        sealed class State {
-            object EMPTY : State()
-            data class RETURNED(val path: String) : State()
-        }
-    }
-}
