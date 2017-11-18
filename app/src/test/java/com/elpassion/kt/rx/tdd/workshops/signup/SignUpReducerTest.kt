@@ -16,7 +16,8 @@ class SignUpReducerTest {
     private val events = PublishRelay.create<Any>()
     private val loginApiSubject = SingleSubject.create<Boolean>()
     private val loginApi: LoginApi = mock { on { checkLogin(any()) } doReturn loginApiSubject }
-    private val state = SignUpReducer(loginApi).invoke(events).test()
+    private val camera: Camera = mock()
+    private val state = SignUpReducer(loginApi, camera).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -64,17 +65,27 @@ class SignUpReducerTest {
 
     @Test
     fun shouldPhotoStateBeEmptyAtTheBegging() {
-        state.assertLastValueThat { photoValidation == PhotoValidation.State.EMPTY }
+        state.assertLastValueThat { addPhoto == AddPhoto.State.EMPTY }
+    }
+
+    @Test
+    fun shouldCallCameraWhenTakingPhoto() {
+        events.accept(AddPhoto.TakePhotoEvent)
+        verify(camera).call()
     }
 }
 
-class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
+class SignUpReducer(val api: LoginApi, val camera: Camera) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        events.ofType(AddPhoto.TakePhotoEvent::class.java)
+                .doOnNext { camera.call() }
+                .subscribe()
+
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap(this::processUserLogin)
                 .startWith(LoginValidation.State.IDLE)
-                .map { State(it, PhotoValidation.State.EMPTY) }
+                .map { State(it, AddPhoto.State.EMPTY) }
     }
 
     private fun processUserLogin(event: LoginValidation.LoginChangedEvent) = with(event) {
@@ -91,7 +102,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State, val photoValidation: PhotoValidation.State)
+    data class State(val loginValidation: LoginValidation.State, val addPhoto: AddPhoto.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
@@ -105,7 +116,9 @@ interface SignUp {
         }
     }
 
-    interface PhotoValidation {
+    interface AddPhoto {
+
+        object TakePhotoEvent
 
         enum class State {
             EMPTY
@@ -115,4 +128,9 @@ interface SignUp {
 
 interface LoginApi {
     fun checkLogin(login: String): Single<Boolean>
+}
+
+
+interface Camera {
+    fun call()
 }
