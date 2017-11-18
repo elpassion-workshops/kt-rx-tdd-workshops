@@ -2,13 +2,12 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.os.Bundle
 import com.elpassion.kt.rx.tdd.workshops.R
-import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.camera
-import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.cameraPermission
-import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.loginApi
 import com.elpassion.kt.rx.tdd.workshops.utils.setImageFromStorage
 import com.jakewharton.rxbinding2.view.clicks
 import com.jakewharton.rxbinding2.widget.textChanges
+import com.trello.rxlifecycle2.android.ActivityEvent
 import com.trello.rxlifecycle2.components.RxActivity
+import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import kotlinx.android.synthetic.main.sign_up_activity.*
@@ -18,8 +17,12 @@ class SignUpActivity : RxActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_up_activity)
-        SignUpReducer(loginApi, camera, cameraPermission)
-                .invoke(uiEvents())
+        uiEvents()
+                .bindToLifecycle(this)
+                .subscribe(SignUp.events)
+
+        SignUp.states
+                .bindToLifecycle(this)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(this::handleEvents)
     }
@@ -40,7 +43,9 @@ class SignUpActivity : RxActivity() {
     }
 
     private fun loginChangesEvents(): Observable<Any> =
-            loginInput.textChanges().map {
+            loginInput.textChanges()
+                    .skipInitialValue()
+                    .map {
                 SignUp.LoginValidation.LoginChangedEvent(it.toString())
             }
 

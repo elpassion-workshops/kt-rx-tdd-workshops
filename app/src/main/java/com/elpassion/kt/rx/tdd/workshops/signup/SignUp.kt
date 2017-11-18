@@ -1,5 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import com.jakewharton.rxrelay2.BehaviorRelay
+import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Maybe
 import io.reactivex.Single
 
@@ -29,6 +31,9 @@ interface SignUp {
     }
 
     companion object {
+        val events = PublishRelay.create<Any>()
+        val states = BehaviorRelay.create<State>()
+
         lateinit var loginApi: () -> Single<Boolean>
         lateinit var camera: () -> Maybe<String>
         lateinit var cameraPermission: () -> Single<Boolean>

@@ -31,6 +31,7 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>,
     private fun handleLoginChangedEvents(events: Events): Observable<SignUp.LoginValidation.State> {
         return events
                 .ofType(SignUp.LoginValidation.LoginChangedEvent::class.java)
+                .distinctUntilChanged()
                 .switchMap(this::handleEvent) //todo: write additional that switchMap is necessary
                 .startWith(SignUp.LoginValidation.State.IDLE)
     }
