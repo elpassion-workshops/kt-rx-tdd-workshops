@@ -1,5 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import io.reactivex.Single
+
 interface SignUp {
 
     interface Photo {
@@ -24,5 +26,10 @@ interface SignUp {
             ISTAKEN,
             APIFAIL
         }
+    }
+
+    companion object {
+
+        lateinit var api : (String) -> Single<Boolean>
     }
 }

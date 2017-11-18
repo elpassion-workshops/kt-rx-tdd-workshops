@@ -8,23 +8,24 @@ import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import kotlinx.android.synthetic.main.sign_up_activity.*
 
 class SignUpActivity : RxActivity() {
 
-    val reducer = SignUpReducer({ Single.never()},{ Maybe.never()},{ Single.never()})
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_up_activity)
+        val reducer = SignUpReducer(SignUp.api,{ Maybe.never()},{ Single.never()})
         reducer.invoke(uiEvents())
                 .bindToLifecycle(this)
+                .observeOn(AndroidSchedulers.mainThread())
                 .map { it.loginValidation }
                 .subscribe {
-                    if(it == SignUp.LoginValidation.State.IDLE){
-                        login_validation_label.setText(R.string.loginValidationIdle)
-                    }else{
-                        login_validation_label.setText(R.string.loginValidationLoading)
+                    when (it) {
+                        SignUp.LoginValidation.State.AVAILABLE -> login_validation_label.setText(R.string.loginValidationAvailable)
+                        SignUp.LoginValidation.State.IDLE -> login_validation_label.setText(R.string.loginValidationIdle)
+                        else -> login_validation_label.setText(R.string.loginValidationLoading)
                     }
                 }
 
