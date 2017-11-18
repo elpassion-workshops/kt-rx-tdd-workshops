@@ -5,10 +5,7 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
-import io.reactivex.Maybe
+import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
@@ -18,9 +15,8 @@ class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val loginApiSubject = SingleSubject.create<Boolean>()
-    private val loginApi: LoginApi = mock { on { checkLogin() } doReturn loginApiSubject }
+    private val loginApi: LoginApi = mock { on { checkLogin(any()) } doReturn loginApiSubject }
     private val state = SignUpReducer(loginApi).invoke(events).test()
-
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -52,6 +48,12 @@ class SignUpReducerTest {
         loginApiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.NOT_AVAILABLE }
     }
+
+    @Test
+    fun shouldValidateLoginUsingPassedLogin() {
+        events.accept(LoginValidation.LoginChangedEvent("b"))
+        verify(loginApi).checkLogin("b")
+    }
 }
 
 class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
@@ -62,7 +64,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
                     if (it.login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
-                        api.checkLogin()
+                        api.checkLogin(it.login)
                                 .map { if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.NOT_AVAILABLE }
                                 .toObservable()
                                 .startWith(LoginValidation.State.IN_PROGRESS)
@@ -89,5 +91,5 @@ interface SignUp {
 }
 
 interface LoginApi {
-    fun checkLogin(): Single<Boolean>
+    fun checkLogin(login: String): Single<Boolean>
 }
