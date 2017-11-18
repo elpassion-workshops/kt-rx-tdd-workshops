@@ -1,8 +1,13 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.support.test.rule.ActivityTestRule
+import com.elpassion.android.commons.espresso.hasText
+import com.elpassion.kt.rx.tdd.workshops.R
 import org.junit.Rule
 import org.junit.Test
+import com.elpassion.android.commons.espresso.onId
+import com.elpassion.android.commons.espresso.replaceText
+
 
 class SignUpActivityTest {
 
@@ -11,6 +16,8 @@ class SignUpActivityTest {
     val rule = ActivityTestRule<SignUpActivity>(SignUpActivity::class.java)
 
     @Test
-    fun shouldStartActivity() {
+    fun shouldHaveLoginInput() {
+        val text = "some example test"
+        onId(R.id.singUpLogin).replaceText(text).hasText(text)
     }
 }
