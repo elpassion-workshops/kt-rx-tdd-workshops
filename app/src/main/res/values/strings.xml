@@ -1,3 +1,4 @@
 <resources>
+    <string name="loginValidationIdle">Idle</string>
     <string name="app_name">KtRxTddApplication</string>
 </resources>
