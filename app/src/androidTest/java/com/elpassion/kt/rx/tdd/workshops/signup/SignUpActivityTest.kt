@@ -23,6 +23,12 @@ class SignUpActivityTest {
 
     @Test
     fun shouldShowIdleLoginValidationIndicatorOnStart() {
-        onId(R.id.signUpProgress).hasText(rule.activity.getString(R.string.loading))
+        onId(R.id.signUpProgress).hasText(R.string.idle)
+    }
+
+    @Test
+    fun shouldShowLoadingValidationState() {
+        onId(R.id.singUpLogin).replaceText("a")
+        onId(R.id.signUpProgress).hasText(R.string.loading)
     }
 }
