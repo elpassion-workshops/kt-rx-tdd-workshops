@@ -9,7 +9,6 @@ import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.Observables
-import io.reactivex.rxkotlin.zipWith
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
@@ -18,7 +17,8 @@ class SignUpReducerTest {
     private val events = PublishRelay.create<Any>()
     private val loginApiSubject = SingleSubject.create<Boolean>()
     private val loginApi: LoginApi = mock { on { checkLogin(any()) } doReturn loginApiSubject }
-    private val camera: Camera = mock()
+    private val cameraSubject = SingleSubject.create<String>()
+    private val camera: Camera = mock { on { call() } doReturn cameraSubject }
     private val systemSubject = SingleSubject.create<Boolean>()
     private val system: System = mock { on { cameraPermission() } doReturn systemSubject }
     private val state = SignUpReducer(loginApi, camera, system).invoke(events).test()
@@ -87,10 +87,12 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted() {
         events.accept(AddPhoto.TakePhotoEvent)
         systemSubject.onSuccess(true)
-        state.assertLastValueThat { addPhoto == AddPhoto.State.PHOTO_TAKEN }
+        val uri = "Path"
+        cameraSubject.onSuccess(uri)
+        state.assertLastValueThat { addPhoto == AddPhoto.State.PhotoTaken(uri) }
     }
 }
 
@@ -115,8 +117,10 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) :
                 .filter { it }
                 .switchMap {
                     camera.call()
-                    Observable.just(AddPhoto.State.PHOTO_TAKEN)
+                            .map { AddPhoto.State.PhotoTaken(it) as AddPhoto.State }
+                            .toObservable()
                 }
+
                 .startWith(AddPhoto.State.EMPTY)
     }
 
@@ -152,9 +156,9 @@ interface SignUp {
 
         object TakePhotoEvent
 
-        enum class State {
-            EMPTY,
-            PHOTO_TAKEN,
+        sealed class State {
+            object EMPTY : State()
+            data class PhotoTaken(val uri: String) : State()
         }
     }
 }
@@ -165,7 +169,7 @@ interface LoginApi {
 
 
 interface Camera {
-    fun call()
+    fun call(): Single<String>
 }
 
 interface System {
