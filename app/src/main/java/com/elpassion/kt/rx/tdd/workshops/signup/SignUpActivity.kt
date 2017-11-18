@@ -16,7 +16,7 @@ class SignUpActivity : RxActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_up_activity)
-        val reducer = SignUpReducer(SignUp.api,{ Maybe.never()},{ Single.never()})
+        val reducer = SignUpReducer(SignUp.api, { Maybe.never() }, { Single.never() })
         reducer.invoke(uiEvents())
                 .bindToLifecycle(this)
                 .observeOn(AndroidSchedulers.mainThread())
