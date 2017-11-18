@@ -5,6 +5,10 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
@@ -12,9 +16,12 @@ import org.junit.Test
 
 class SignUpReducerTest {
 
-    private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
     private val apiSubject = SingleSubject.create<Boolean>()
+    private val api = mock<(String) -> Single<Boolean>>().apply {
+        whenever(this.invoke(any())).thenReturn(apiSubject)
+    }
+    private val events = PublishRelay.create<Any>()
+    private val state = SignUpReducer(api).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -47,18 +54,25 @@ class SignUpReducerTest {
         apiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.NOT_AVAILABLE }
     }
+
+    @Test
+    fun shouldValidateLoginUsingPassedLogin() {
+        val loginEvent = LoginValidation.LoginChangedEvent("a")
+        events.accept(loginEvent)
+        verify(api).invoke(loginEvent.login)
+    }
 }
 
-class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(val api: (String) -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
                     if (it.login.isNotEmpty()) {
-                        api.invoke().toObservable().map {
-                            if(it) {
+                        api.invoke(it.login).toObservable().map {
+                            if (it) {
                                 LoginValidation.State.AVAILABLE
-                            }else{
+                            } else {
                                 LoginValidation.State.NOT_AVAILABLE
                             }
                         }.startWith(LoginValidation.State.IN_PROGRESS)
