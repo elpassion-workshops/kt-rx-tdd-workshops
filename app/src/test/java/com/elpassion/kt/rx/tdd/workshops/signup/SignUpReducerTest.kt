@@ -70,6 +70,7 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
                 just(LoginValidation.State.IDLE)
             } else {
                 callApi()
+                        .onErrorReturn { LoginValidation.State.ERROR }
             }
 
     private fun callApi() =
@@ -81,9 +82,7 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
                 }
             }.toObservable()
                     .startWith(LoginValidation.State.IN_PROGRESS)
-                    .onErrorReturn {
-                        LoginValidation.State.ERROR
-                    }
+
 }
 
 interface SignUp {
