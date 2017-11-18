@@ -60,7 +60,11 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent("b"))
         loginApiSubject.onError(Throwable("Error"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.API_ERROR }
+    }
 
+    @Test
+    fun shouldPhotoStateBeEmptyAtTheBegging() {
+        state.assertLastValueThat { photoValidation == PhotoValidation.State.EMPTY }
     }
 }
 
@@ -70,7 +74,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap(this::processUserLogin)
                 .startWith(LoginValidation.State.IDLE)
-                .map { State(it) }
+                .map { State(it, PhotoValidation.State.EMPTY) }
     }
 
     private fun processUserLogin(event: LoginValidation.LoginChangedEvent) = with(event) {
@@ -87,7 +91,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(val loginValidation: LoginValidation.State, val photoValidation: PhotoValidation.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
@@ -98,6 +102,13 @@ interface SignUp {
             AVAILABLE,
             NOT_AVAILABLE,
             API_ERROR
+        }
+    }
+
+    interface PhotoValidation {
+
+        enum class State {
+            EMPTY
         }
     }
 }
