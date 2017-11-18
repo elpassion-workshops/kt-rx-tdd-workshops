@@ -1,9 +1,13 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
-import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.LoginValidation
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Photo
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.never
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test

@@ -3,9 +3,9 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import android.support.test.rule.ActivityTestRule
 import com.elpassion.android.commons.espresso.hasText
 import com.elpassion.android.commons.espresso.onId
+import com.elpassion.android.commons.espresso.replaceText
 import com.elpassion.android.commons.espresso.typeText
 import com.elpassion.kt.rx.tdd.workshops.R
-import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
 import org.junit.Rule
 import org.junit.Test
@@ -63,5 +63,11 @@ class SignUpActivityTest {
         onId(R.id.login_input).typeText("login")
         apiSubject.onError(RuntimeException())
         onId(R.id.login_validation_label).hasText(R.string.loginValidationError)
+    }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased(){
+        onId(R.id.login_input).typeText("login").replaceText("")
+        onId(R.id.login_validation_label).hasText(R.string.loginValidationIdle)
     }
 }
