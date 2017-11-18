@@ -23,10 +23,10 @@ class SignUpReducerTest {
     private val api = mock<(String) -> Single<Boolean>> {
         on { invoke(any()) }.thenReturn(apiSubject)
     }
+    private val cameraSubject = MaybeSubject.create<String>()
     private val camera = mock<() -> Maybe<String>> {
         on { invoke() }.thenReturn(cameraSubject)
     }
-    private val cameraSubject = MaybeSubject.create<String>()
     private val state = SignUpReducer(api, camera, { permissionSubject }).invoke(events).test()
 
     @Test
@@ -95,6 +95,14 @@ class SignUpReducerTest {
         verify(camera, never()).invoke()
     }
 
+    @Test
+    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+        permissionSubject.onSuccess(true)
+        cameraSubject.onSuccess("photo path")
+        events.accept(PhotoValidation.PhotoEvent())
+        state.assertLastValueThat { photoValidation == PhotoValidation.State.RETURNED("") }
+    }
+
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
         apiSubject.onSuccess(validated)
@@ -128,11 +136,12 @@ class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Mayb
     private fun photoValidationReducer(events: Events): Observable<PhotoValidation.State> {
         return events
                 .ofType(PhotoValidation.PhotoEvent::class.java)
-                .flatMapSingle {
+                .flatMapMaybe<SignUp.PhotoValidation.State> {
                     permission.invoke()
-                }
-                .flatMapMaybe<PhotoValidation.State> {
-                    if (it) camera.invoke().map { PhotoValidation.State.RETURNED(it) } else Maybe.empty()
+                            .filter { it }
+                            .flatMap {
+                                camera.invoke().map { PhotoValidation.State.RETURNED("") }
+                            }
                 }
                 .startWith(PhotoValidation.State.EMPTY)
     }
