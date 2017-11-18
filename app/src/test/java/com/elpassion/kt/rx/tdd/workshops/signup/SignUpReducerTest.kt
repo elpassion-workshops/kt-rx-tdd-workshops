@@ -69,6 +69,11 @@ class SignUpReducerTest {
         apiSubject.onError(Exception())
         state.assertLastValueThat { loginValidation == LoginValidation.State.ERROR }
     }
+
+    @Test
+    fun shouldPhotoStateBeEmptyAtTheBegging() {
+        state.assertLastValueThat { photoState == Photo.State.EMPTY }
+    }
 }
 
 class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>) : Reducer<SignUp.State> {
@@ -83,7 +88,7 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>)
                     }
                 }
                 .startWith(LoginValidation.State.IDLE)
-                .map(SignUp::State)
+                .map {State(it)}
     }
 
     private fun validateLogin(login: String) = loginValidationApi.invoke(login)
@@ -100,7 +105,7 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>)
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(val loginValidation: LoginValidation.State, val photoState: Photo.State = Photo.State.EMPTY)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
@@ -111,6 +116,12 @@ interface SignUp {
             AVAILABLE,
             NOT_AVAILABLE,
             ERROR,
+        }
+    }
+
+    interface Photo{
+        enum class State{
+            EMPTY,
         }
     }
 }
