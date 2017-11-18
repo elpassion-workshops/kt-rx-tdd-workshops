@@ -46,9 +46,7 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .switchMap {
-                    handleEvent(it)
-                }
+                .switchMap(this::handleEvent)
                 .startWith(LoginValidation.State.IDLE)
                 .map(SignUp::State)
     }
