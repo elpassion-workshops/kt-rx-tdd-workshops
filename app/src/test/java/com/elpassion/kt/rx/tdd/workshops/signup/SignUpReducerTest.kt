@@ -5,8 +5,14 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.functions.BiFunction
+import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 import java.util.concurrent.TimeoutException
@@ -14,8 +20,15 @@ import java.util.concurrent.TimeoutException
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
     private val apiSubject = SingleSubject.create<Boolean>()
+    private val api = mock<(String) -> Single<Boolean>> {
+        on { invoke(any()) }.thenReturn(apiSubject)
+    }
+    private val camera = mock<() -> Maybe<String>> {
+        on { invoke() }.thenReturn(cameraSubject)
+    }
+    private val cameraSubject = MaybeSubject.create<String>()
+    private val state = SignUpReducer(api, camera).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -47,7 +60,9 @@ class SignUpReducerTest {
 
     @Test
     fun shouldValidateLoginUsingPassedLogin() {
-        validatePassedLoginString("bsdfsdfsd", true, LoginValidation.State.AVAILABLE)
+        val login = "ssdf"
+        events.accept(LoginValidation.LoginChangedEvent(login))
+        verify(api).invoke(login)
     }
 
     @Test
@@ -62,6 +77,12 @@ class SignUpReducerTest {
         state.assertLastValueThat { photoValidation == PhotoValidation.State.EMPTY }
     }
 
+    @Test
+    fun shouldCallCameraWhenTakingPhoto() {
+        events.accept(PhotoValidation.PhotoEvent())
+        verify(camera).invoke()
+    }
+
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
@@ -70,10 +91,13 @@ class SignUpReducerTest {
     }
 }
 
-class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Maybe<String>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
-        return loginValidationReducer(events)
-                .map { SignUp.State(it, PhotoValidation.State.EMPTY) }
+        return Observable
+                .combineLatest(loginValidationReducer(events), photoValidationReducer(events),
+                        BiFunction<LoginValidation.State, PhotoValidation.State, SignUp.State> {
+                            login, photo ->  SignUp.State(login, photo)}
+                )
     }
 
     private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
@@ -83,7 +107,7 @@ class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
                     if (it.login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
-                        api.invoke()
+                        api.invoke(it.login)
                                 .map {
                                     if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.TAKEN
                                 }
@@ -94,6 +118,12 @@ class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
                 }
                 .startWith(LoginValidation.State.IDLE)
     }
+
+    private fun photoValidationReducer(events: Events): Observable<PhotoValidation.State> {
+        camera.invoke()
+        return Observable.just(PhotoValidation.State.EMPTY)
+    }
+
 }
 
 interface SignUp {
@@ -112,6 +142,8 @@ interface SignUp {
     }
 
     interface PhotoValidation {
+
+        class PhotoEvent
 
         sealed class State {
             object EMPTY : State()
