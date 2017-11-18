@@ -80,8 +80,8 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>)
 
     private fun validateLogin(login: String) = loginValidationApi.invoke(login)
             .toObservable()
-            .map {
-                if (it) {
+            .map { isLoginAvailable ->
+                if (isLoginAvailable) {
                     LoginValidation.State.AVAILABLE
                 } else {
                     LoginValidation.State.NOT_AVAILABLE
