@@ -13,8 +13,8 @@ import org.junit.Test
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val apiSubject = SingleSubject.create<Boolean>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
+    private val loginValidationApiSubject = SingleSubject.create<Boolean>()
+    private val state = SignUpReducer({ loginValidationApiSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -29,8 +29,8 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeLoginUnavailableAfterUserTypeTakenLogin() {
-        events.accept(LoginValidation.LoginChangedEvent("a"))
-        apiSubject.onSuccess(false)
+        events.accept(LoginValidation.LoginChangedEvent("taken login"))
+        loginValidationApiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.LOGIN_TAKEN }
     }
 }
