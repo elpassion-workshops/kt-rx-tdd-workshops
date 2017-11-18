@@ -4,4 +4,5 @@
     <string name="loginValidationLoading">Loading...</string>
     <string name="loginValidationAvailable">Login available</string>
     <string name="loginValidationIsTaken">Login is taken</string>
+    <string name="loginValidationError">Login error</string>
 </resources>

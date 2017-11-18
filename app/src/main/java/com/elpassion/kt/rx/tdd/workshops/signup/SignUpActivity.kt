@@ -23,6 +23,7 @@ class SignUpActivity : RxActivity() {
                 .map { it.loginValidation }
                 .subscribe {
                     when (it) {
+                        SignUp.LoginValidation.State.APIFAIL -> login_validation_label.setText(R.string.loginValidationError)
                         SignUp.LoginValidation.State.AVAILABLE -> login_validation_label.setText(R.string.loginValidationAvailable)
                         SignUp.LoginValidation.State.IDLE -> login_validation_label.setText(R.string.loginValidationIdle)
                         SignUp.LoginValidation.State.ISTAKEN -> login_validation_label.setText(R.string.loginValidationIsTaken)
