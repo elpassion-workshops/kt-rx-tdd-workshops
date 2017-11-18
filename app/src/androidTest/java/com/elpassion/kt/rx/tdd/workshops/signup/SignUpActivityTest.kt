@@ -1,12 +1,12 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.support.test.rule.ActivityTestRule
-import com.elpassion.android.commons.espresso.hasText
-import com.elpassion.android.commons.espresso.onId
-import com.elpassion.android.commons.espresso.replaceText
-import com.elpassion.android.commons.espresso.typeText
+import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
 import org.junit.Rule
@@ -20,6 +20,10 @@ class SignUpActivityTest {
     private val loginApi = mock<LoginApi> {
         on { checkLogin(any()) } doReturn loginApiSubject
     }
+    private val cameraSubject = SingleSubject.create<String>()
+    private val camera = mock<Camera> { on { call() } doReturn cameraSubject }
+    private val systemSubject = SingleSubject.create<Boolean>()
+    private val system = mock<System> { on { cameraPermission() } doReturn systemSubject }
 
     @JvmField
     @Rule
@@ -27,6 +31,8 @@ class SignUpActivityTest {
         override fun beforeActivityLaunched() {
             SignUpActivity.loginApi = loginApi
             SignUpActivity.ioScheduler = testScheduler
+            SignUpActivity.camera = camera
+            SignUpActivity.system = system
         }
     }
 
@@ -79,5 +85,13 @@ class SignUpActivityTest {
     private fun enterSampleLoginIntoLoginInputAndAdvanceTime() {
         onId(R.id.loginInput).typeText("a")
         testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+    }
+
+    @Test
+    fun shouldTakePhotoOnTakePhotoClicked() {
+        onId(R.id.takePhoto).click()
+        systemSubject.onSuccess(true)
+        cameraSubject.onSuccess("test")
+        verify(camera).call()
     }
 }
