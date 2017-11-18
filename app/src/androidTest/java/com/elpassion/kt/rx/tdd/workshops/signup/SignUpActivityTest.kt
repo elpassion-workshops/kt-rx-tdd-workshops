@@ -38,19 +38,19 @@ class SignUpActivityTest {
 
     @Test
     fun shouldShowIdleLoginValidationIndicatorOnStart() {
-        onId(R.id.indicator).hasText("idle")
+        onId(R.id.indicator).hasText(R.string.idle)
     }
 
     @Test
     fun shouldShowLoadingValidationState(){
         onId(R.id.loginInput).typeText("login")
-        onId(R.id.indicator).hasText("loading")
+        onId(R.id.indicator).hasText(R.string.loading)
     }
 
     @Test
     fun shouldShowLoginAvailableValidationState() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).typeText("a")
         apiSubject.onSuccess(true)
-        onId(R.id.indicator).hasText("available")
+        onId(R.id.indicator).hasText(R.string.available)
     }
 }

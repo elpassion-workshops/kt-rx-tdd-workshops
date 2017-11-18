@@ -14,17 +14,21 @@ class SignUpActivity : RxActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_up_activity)
+        setupReducer()
+    }
+
+    private fun setupReducer() {
         SignUpReducer(SignUpDI.api, SignUpDI.cameraApi, SignUpDI.permission)
                 .invoke(loginInput.textChanges().map { SignUp.LoginValidation.LoginChangedEvent(it.toString()) })
-                .subscribeBy (onNext = {
+                .subscribeBy {
                     when (it.loginValidation) {
                         SignUp.LoginValidation.State.IN_PROGRESS -> {
-                            indicator.text = "loading"
+                            indicator.setText(R.string.loading)
                         }
                         SignUp.LoginValidation.State.AVAILABLE -> {
-                            indicator.text = "available"
+                            indicator.setText(R.string.available)
                         }
                     }
-                }, onError = { Log.e("", it.toString())})
+                }
     }
 }
