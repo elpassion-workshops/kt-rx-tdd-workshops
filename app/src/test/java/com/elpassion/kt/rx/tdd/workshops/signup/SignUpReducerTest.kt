@@ -63,13 +63,13 @@ class SignUpReducerTest {
     }
 }
 
-class SignUpReducer(val api: (String) -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
                     if (it.login.isNotEmpty()) {
-                        api.invoke(it.login).toObservable().map {
+                        loginValidationApi.invoke(it.login).toObservable().map {
                             if (it) {
                                 LoginValidation.State.AVAILABLE
                             } else {
