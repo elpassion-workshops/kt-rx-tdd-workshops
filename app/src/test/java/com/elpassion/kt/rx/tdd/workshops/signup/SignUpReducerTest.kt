@@ -64,7 +64,7 @@ class SignUpReducerTest {
 
     @Test
     fun shouldPhotoStateBeEmptyAtTheBegging() {
-        state.assertLastValueThat { photoState == Photo.State.EMPTY }
+        state.assertLastValueThat { photoState is Photo.State.Empty }
     }
 
     @Test
@@ -80,11 +80,19 @@ class SignUpReducerTest {
         permissionProvider.onSuccess(false)
         Assert.assertFalse(cameraSubject.hasObservers())
     }
+
+    @Test
+    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+        events.accept(Photo.TakePhotoEvent)
+        permissionProvider.onSuccess(true)
+        cameraSubject.onSuccess("image uri")
+        state.assertLastValueThat { photoState is Photo.State.Taken }
+    }
 }
 
 class SignUpReducer(private val loginApi: () -> Single<Boolean>,
                     private val camera: () -> Maybe<String>,
-                    private val camerPermission: () -> Single<Boolean>) : Reducer<SignUp.State> {
+                    private val cameraPermission: () -> Single<Boolean>) : Reducer<SignUp.State> {
 
 
     override fun invoke(events: Events): Observable<SignUp.State> {
@@ -92,14 +100,20 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>,
     }
 
     private fun handleTakePhotoEvents(): Observable<Photo.State> =
-            camerPermission()
+            cameraPermission()
                     .filter { hasCameraPermission -> hasCameraPermission }
                     .flatMapObservable {
                         camera()
-                                .map { Photo.State.EMPTY }
+                                .map {
+                                    if (it.isEmpty()) {
+                                        Photo.State.Empty
+                                    } else {
+                                        Photo.State.Taken
+                                    }
+                                }
                                 .toObservable()
                     }
-                    .startWith(Photo.State.EMPTY)
+                    .startWith(Photo.State.Empty)
 
     private fun handleLoginChangedEvents(events: Events): Observable<LoginValidation.State> {
         return events
@@ -133,8 +147,9 @@ interface SignUp {
 
     interface Photo {
 
-        enum class State {
-            EMPTY,
+        sealed class State {
+            object Empty : Photo.State()
+            object Taken : Photo.State()
         }
 
         object TakePhotoEvent
