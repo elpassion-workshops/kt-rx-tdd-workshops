@@ -1,10 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.support.test.rule.ActivityTestRule
-import com.elpassion.android.commons.espresso.hasText
-import com.elpassion.android.commons.espresso.onId
-import com.elpassion.android.commons.espresso.replaceText
-import com.elpassion.android.commons.espresso.typeText
+import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.SignUpDI
 import com.nhaarman.mockito_kotlin.any
@@ -75,5 +72,14 @@ class SignUpActivityTest {
         apiSubject.onSuccess(true)
         onId(R.id.loginInput).replaceText("")
         onId(R.id.indicator).hasText(R.string.idle)
+    }
+
+    @Test
+    fun shouldTakePhotoOnTakePhotoClicked() {
+        onId(R.id.takePhoto).click()
+
+        permissionSubject.onSuccess(true)
+        cameraSubject.onSuccess("uri://test")
+        onId(R.id.takePhoto).isNotDisplayed()
     }
 }

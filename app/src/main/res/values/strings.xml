@@ -5,4 +5,5 @@
     <string name="idle">idle</string>
     <string name="taken">taken</string>
     <string name="error_message">Login checker failed</string>
+    <string name="take_photo">Take photo</string>
 </resources>
