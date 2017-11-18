@@ -1,10 +1,7 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.support.test.rule.ActivityTestRule
-import com.elpassion.android.commons.espresso.hasText
-import com.elpassion.android.commons.espresso.isDisplayed
-import com.elpassion.android.commons.espresso.onId
-import com.elpassion.android.commons.espresso.typeText
+import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
 import io.reactivex.Maybe
 import io.reactivex.Single
@@ -61,5 +58,12 @@ class SignUpActivityTest {
         onId(R.id.loginInput).typeText("login")
         loginApiSubject.onError(RuntimeException())
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_error)
+    }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased() {
+        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("")
+        onId(R.id.loginIndicator).hasText(R.string.login_indicator_idle)
     }
 }

@@ -33,5 +33,7 @@ class SignUpActivity : RxActivity() {
     }
 
     private fun uiEvents(): Observable<Any> =
-            loginInput.textChanges().map { SignUp.LoginValidation.LoginChangedEvent(it.toString()) }
+            loginInput.textChanges().map {
+                SignUp.LoginValidation.LoginChangedEvent(it.toString())
+            }
 }
