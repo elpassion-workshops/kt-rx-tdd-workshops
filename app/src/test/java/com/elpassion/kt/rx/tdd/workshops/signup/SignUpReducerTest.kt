@@ -3,19 +3,25 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
-import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.LoginValidation
+import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Photo
 import com.jakewharton.rxrelay2.PublishRelay
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Observable.just
 import io.reactivex.Single
+import io.reactivex.observers.TestObserver
+import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
+import org.junit.Assert
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val loginApiSubject = SingleSubject.create<Boolean>()
-    private val state = SignUpReducer({ loginApiSubject }).invoke(events).test()
+    private val cameraSubject = MaybeSubject.create<String>()
+    private val state = SignUpReducer({ loginApiSubject }, { cameraSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -59,15 +65,22 @@ class SignUpReducerTest {
     fun shouldPhotoStateBeEmptyAtTheBegging() {
         state.assertLastValueThat { photoState == Photo.State.EMPTY }
     }
+
+    @Test
+    fun shouldCallCameraWhenTakingPhoto() {
+        events.accept(Photo.TakePhotoEvent)
+        Assert.assertTrue(cameraSubject.hasObservers())
+    }
 }
 
-class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val loginApi: () -> Single<Boolean>, val camera: () -> Maybe<String>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        camera().subscribe()
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap(this::handleEvent)
                 .startWith(LoginValidation.State.IDLE)
-                .map{ validationState -> SignUp.State(validationState, Photo.State.EMPTY)}
+                .map { validationState -> SignUp.State(validationState, Photo.State.EMPTY) }
     }
 
     private fun handleEvent(event: LoginValidation.LoginChangedEvent) =
@@ -98,7 +111,10 @@ interface SignUp {
         enum class State {
             EMPTY,
         }
+
+        object TakePhotoEvent
     }
+
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
 
