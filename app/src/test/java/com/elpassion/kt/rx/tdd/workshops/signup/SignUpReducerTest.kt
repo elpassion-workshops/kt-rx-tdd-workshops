@@ -81,8 +81,14 @@ class SignUpReducerTest {
         permissionProvider.onSuccess(true)
         cameraSubject.onSuccess(imageUri)
         state.assertLastValueThat {
-                    photoState == Photo.State.Taken(imageUri)
+            photoState == Photo.State.Taken(imageUri)
         }
+    }
+
+    @Test
+    fun shouldNotCallCameraWithoutTakePhotoEvent() {
+        permissionProvider.onSuccess(true)
+        Assert.assertFalse(cameraSubject.hasObservers())
     }
 }
 

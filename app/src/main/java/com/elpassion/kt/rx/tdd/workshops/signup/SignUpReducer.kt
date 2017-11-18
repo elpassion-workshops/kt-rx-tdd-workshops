@@ -13,13 +13,15 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>,
 
 
     override fun invoke(events: Events): Observable<SignUp.State> {
-        return Observables.combineLatest(handleLoginChangedEvents(events), handleTakePhotoEvents(), SignUp::State)
+        return Observables.combineLatest(handleLoginChangedEvents(events), handleTakePhotoEvents(events), SignUp::State)
     }
 
-    private fun handleTakePhotoEvents(): Observable<SignUp.Photo.State> =
-            cameraPermission()
+    private fun handleTakePhotoEvents(events: Events): Observable<SignUp.Photo.State> =
+            events
+                    .ofType(SignUp.Photo.TakePhotoEvent::class.java)
+                    .switchMap { cameraPermission().toObservable() }
                     .filter { hasCameraPermission -> hasCameraPermission }
-                    .flatMapObservable<SignUp.Photo.State> {
+                    .flatMap<SignUp.Photo.State> {
                         camera()
                                 .map { uri -> SignUp.Photo.State.Taken(uri) }
                                 .toObservable()

@@ -81,7 +81,5 @@ class SignUpActivityTest {
         onId(R.id.takePhotoButton).hasText(R.string.take_photo)
     }
 
-    @Test
-    fun shouldRegisterButtonBeVisible(){
-    }
+
 }

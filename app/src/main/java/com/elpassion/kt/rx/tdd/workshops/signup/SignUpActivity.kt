@@ -5,6 +5,7 @@ import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.camera
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.cameraPermission
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.loginApi
+import com.jakewharton.rxbinding2.view.clicks
 import com.jakewharton.rxbinding2.widget.textChanges
 import com.trello.rxlifecycle2.components.RxActivity
 import io.reactivex.Observable
@@ -22,6 +23,8 @@ class SignUpActivity : RxActivity() {
                 .subscribe(this::handleEvents)
     }
 
+    private fun uiEvents() = Observable.merge(loginChangesEvents(), takePhotoEvents())
+
     private fun handleEvents(state: SignUp.State) {
         when (state.loginValidation) {
             SignUp.LoginValidation.State.IDLE -> loginIndicator.setText(R.string.login_indicator_idle)
@@ -32,8 +35,13 @@ class SignUpActivity : RxActivity() {
         }
     }
 
-    private fun uiEvents(): Observable<Any> =
+    private fun loginChangesEvents(): Observable<Any> =
             loginInput.textChanges().map {
                 SignUp.LoginValidation.LoginChangedEvent(it.toString())
+            }
+
+    private fun takePhotoEvents(): Observable<Any> =
+            takePhotoButton.clicks().map {
+                SignUp.Photo.TakePhotoEvent
             }
 }
