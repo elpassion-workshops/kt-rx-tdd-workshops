@@ -56,4 +56,12 @@ class SignUpActivityTest {
         loginApiSubject.onSuccess(true)
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.AVAILABLE.toString())
     }
+
+    @Test
+    fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
+        onId(R.id.loginInput).typeText("a")
+        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        loginApiSubject.onSuccess(false)
+        onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.NOT_AVAILABLE.toString())
+    }
 }
