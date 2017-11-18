@@ -28,8 +28,13 @@ class SignUpReducerTest {
             invoke(any())
         }.thenReturn(apiSubject)
     }
+    private val cameraMock= mock<()->MaybeSubject<String>>{
+        on{
+            invoke()
+        }.thenReturn(cameraSubject)
+    }
 
-    private val state = SignUpReducer(apiMock, { cameraSubject },{permissionsSubject}).invoke(events).test()
+    private val state = SignUpReducer(apiMock,cameraMock ,{permissionsSubject}).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -84,8 +89,7 @@ class SignUpReducerTest {
     fun shouldCallCameraWhenTakingPhoto() {
         events.accept(Photo.TakePhotoEvent)
         permissionsSubject.onSuccess(true)
-        cameraSubject.onSuccess("photoURI")
-        state.assertLastValueThat { photoState == SignUp.Photo.State.Photo("photoURI") }
+        verify(cameraMock).invoke()
     }
 
     @Test
@@ -94,6 +98,14 @@ class SignUpReducerTest {
         permissionsSubject.onSuccess(false)
         cameraSubject.onSuccess("photoURI")
         state.assertLastValueThat { photoState == SignUp.Photo.State.Empty }
+    }
+
+    @Test
+    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted(){
+        events.accept(Photo.TakePhotoEvent)
+        permissionsSubject.onSuccess(true)
+        cameraSubject.onSuccess("photoURI")
+        state.assertLastValueThat { photoState == SignUp.Photo.State.Photo("photoURI") }
     }
 }
 
