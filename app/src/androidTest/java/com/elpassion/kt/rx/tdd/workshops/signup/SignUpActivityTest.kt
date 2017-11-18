@@ -1,13 +1,11 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import android.support.test.espresso.ViewAssertion
 import android.support.test.rule.ActivityTestRule
-import com.elpassion.android.commons.espresso.click
-import com.elpassion.android.commons.espresso.hasText
+import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
 import org.junit.Rule
 import org.junit.Test
-import com.elpassion.android.commons.espresso.onId
-import com.elpassion.android.commons.espresso.replaceText
 import com.elpassion.kt.rx.tdd.workshops.createTestBitmap
 import com.elpassion.kt.rx.tdd.workshops.hasBitmap
 import io.reactivex.schedulers.TestScheduler
@@ -99,5 +97,10 @@ class SignUpActivityTest {
         permissions.onSuccess(true)
         camera.onSuccess(testBitmap.first)
         onId(R.id.signUpAddPhoto).hasText(R.string.change_photo)
+    }
+
+    @Test
+    fun shouldRegisterButtonBeVisible() {
+        onId(R.id.signUpRun).isDisplayed()
     }
 }
