@@ -43,32 +43,33 @@ class SignUpActivityTest {
 
     @Test
     fun shouldShowLoadingValidationState() {
-        onId(R.id.loginInput).typeText("a")
-        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        enterSampleLoginIntoLoginInputAndAdvanceTime()
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.IN_PROGRESS.toString())
     }
 
     @Test
     fun shouldShowLoginAvailableValidationState() {
-        onId(R.id.loginInput).typeText("a")
-        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        enterSampleLoginIntoLoginInputAndAdvanceTime()
         loginApiSubject.onSuccess(true)
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.AVAILABLE.toString())
     }
 
     @Test
     fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
-        onId(R.id.loginInput).typeText("a")
-        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        enterSampleLoginIntoLoginInputAndAdvanceTime()
         loginApiSubject.onSuccess(false)
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.NOT_AVAILABLE.toString())
     }
 
     @Test
     fun shouldShowLoginValidationErrorWhenApiReturnsError() {
-        onId(R.id.loginInput).typeText("a")
-        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        enterSampleLoginIntoLoginInputAndAdvanceTime()
         loginApiSubject.onError(Throwable())
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.API_ERROR.toString())
+    }
+
+    private fun enterSampleLoginIntoLoginInputAndAdvanceTime() {
+        onId(R.id.loginInput).typeText("a")
+        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
     }
 }
