@@ -20,4 +20,9 @@ class SignUpActivityTest {
         val text = "some example test"
         onId(R.id.singUpLogin).replaceText(text).hasText(text)
     }
+
+    @Test
+    fun shouldShowIdleLoginValidationIndicatorOnStart() {
+        onId(R.id.signUpProgress).hasText(rule.activity.getString(R.string.loading))
+    }
 }
