@@ -8,11 +8,14 @@ import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.rxkotlin.Observables.combineLatest
+import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 class SignUpReducerTest {
@@ -27,7 +30,8 @@ class SignUpReducerTest {
     private val camera = mock<() -> Maybe<String>> {
         on { invoke() }.thenReturn(cameraSubject)
     }
-    private val state = SignUpReducer(api, camera, { permissionSubject }).invoke(events).test()
+    private val debounceScheduler = TestScheduler()
+    private val state = SignUpReducer(api, camera, { permissionSubject }, debounceScheduler).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -37,6 +41,7 @@ class SignUpReducerTest {
     @Test
     fun shouldLoginValidationStateBeInProgressAfterUserTypeLogin() {
         events.accept(LoginValidation.LoginChangedEvent("a"))
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
 
@@ -61,14 +66,22 @@ class SignUpReducerTest {
     fun shouldValidateLoginUsingPassedLogin() {
         val login = "ssdf"
         events.accept(LoginValidation.LoginChangedEvent(login))
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
         verify(api).invoke(login)
     }
 
     @Test
     fun shouldShowErrorWhenApiReturnsError() {
         events.accept(LoginValidation.LoginChangedEvent("a"))
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
         apiSubject.onError(TimeoutException())
         state.assertLastValueThat { loginValidation == LoginValidation.State.ERROR }
+    }
+
+    @Test
+    fun shouldNotCallApiAfterTypingLoginButBeforeTimePasses() {
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        verify(api, never()).invoke(any())
     }
 
     @Test
@@ -115,18 +128,25 @@ class SignUpReducerTest {
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
+        debounceScheduler.advanceTimeBy(5, TimeUnit.SECONDS)
         apiSubject.onSuccess(validated)
         state.assertLastValueThat { loginValidation == requiredState }
     }
 }
 
-class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Maybe<String>, val permission: () -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(
+        val api: (String) -> Single<Boolean>,
+        val camera: () -> Maybe<String>,
+        val permission: () -> Single<Boolean>,
+        val debounceScheduler: Scheduler) : Reducer<SignUp.State> {
+
     override fun invoke(events: Events): Observable<SignUp.State> =
             combineLatest(loginValidationReducer(events), photoValidationReducer(events), SignUp::State)
 
     private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
+                .debounce(5, TimeUnit.SECONDS, debounceScheduler)
                 .switchMap {
                     if (it.login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
