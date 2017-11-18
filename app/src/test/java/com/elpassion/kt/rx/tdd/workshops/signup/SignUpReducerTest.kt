@@ -34,7 +34,6 @@ class SignUpReducerTest {
         state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
     }
 
-
     @Test
     fun shouldLoginValidationStateBeAvailableWhenLoginIsAvailable() {
         events.accept(LoginValidation.LoginChangedEvent("login"))
@@ -47,18 +46,21 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .switchMap { event ->
-                    if (event.login.isEmpty()) {
-                        just(LoginValidation.State.IDLE)
-                    } else {
-                        loginApi().map { LoginValidation.State.AVAILABLE }
-                                .toObservable()
-                                .startWith(LoginValidation.State.IN_PROGRESS)
-                    }
+                .switchMap {
+                    handleEvent(it)
                 }
                 .startWith(LoginValidation.State.IDLE)
                 .map(SignUp::State)
     }
+
+    private fun handleEvent(event: LoginValidation.LoginChangedEvent) =
+            if (event.login.isEmpty()) {
+                just(LoginValidation.State.IDLE)
+            } else {
+                loginApi().map { LoginValidation.State.AVAILABLE }
+                        .toObservable()
+                        .startWith(LoginValidation.State.IN_PROGRESS)
+            }
 }
 
 interface SignUp {
