@@ -10,7 +10,7 @@ import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Observable.just
 import io.reactivex.Single
-import io.reactivex.observers.TestObserver
+import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Assert
@@ -21,7 +21,8 @@ class SignUpReducerTest {
     private val events = PublishRelay.create<Any>()
     private val loginApiSubject = SingleSubject.create<Boolean>()
     private val cameraSubject = MaybeSubject.create<String>()
-    private val state = SignUpReducer({ loginApiSubject }, { cameraSubject }).invoke(events).test()
+    private val permissionProvider = SingleSubject.create<Boolean>()
+    private val state = SignUpReducer({ loginApiSubject }, { cameraSubject }, { permissionProvider }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -69,18 +70,42 @@ class SignUpReducerTest {
     @Test
     fun shouldCallCameraWhenTakingPhoto() {
         events.accept(Photo.TakePhotoEvent)
+        permissionProvider.onSuccess(true)
         Assert.assertTrue(cameraSubject.hasObservers())
+    }
+
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
+        events.accept(Photo.TakePhotoEvent)
+        permissionProvider.onSuccess(false)
+        Assert.assertFalse(cameraSubject.hasObservers())
     }
 }
 
-class SignUpReducer(private val loginApi: () -> Single<Boolean>, val camera: () -> Maybe<String>) : Reducer<SignUp.State> {
+class SignUpReducer(private val loginApi: () -> Single<Boolean>,
+                    private val camera: () -> Maybe<String>,
+                    private val permissions: () -> Single<Boolean>) : Reducer<SignUp.State> {
+    
+
     override fun invoke(events: Events): Observable<SignUp.State> {
-        camera().subscribe()
+        return Observables.combineLatest(handleLoginChangedEvents(events), handleTakePhotoEvents(), SignUp::State)
+    }
+
+    private fun handleTakePhotoEvents(): Observable<Photo.State> =
+            permissions()
+                    .filter { it }
+                    .flatMapObservable {
+                        camera()
+                                .map { Photo.State.EMPTY }
+                                .toObservable()
+                    }
+                    .startWith(Photo.State.EMPTY)
+
+    private fun handleLoginChangedEvents(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap(this::handleEvent)
                 .startWith(LoginValidation.State.IDLE)
-                .map { validationState -> SignUp.State(validationState, Photo.State.EMPTY) }
     }
 
     private fun handleEvent(event: LoginValidation.LoginChangedEvent) =
