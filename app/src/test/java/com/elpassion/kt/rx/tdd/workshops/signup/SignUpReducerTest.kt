@@ -28,11 +28,19 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldLoginValidationStateBeLoginUnavailableAfterUserTypeTakenLogin() {
+    fun shouldLoginValidationStateBeLoginUnavailableAfterUserTypesTakenLogin() {
         events.accept(LoginValidation.LoginChangedEvent("taken login"))
         loginValidationApiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.LOGIN_TAKEN }
     }
+
+    @Test
+    fun shouldLoginValidationStateBeLoginAvailableAfterUserTypesAvailableLogin() {
+        events.accept(LoginValidation.LoginChangedEvent("available login"))
+        loginValidationApiSubject.onSuccess(true)
+        state.assertLastValueThat { loginValidation == LoginValidation.State.LOGIN_AVAILABLE }
+    }
+
 }
 
 class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignUp.State> {
@@ -45,7 +53,13 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
 
     private fun callLoginValidationApi(): Observable<LoginValidation.State> {
         return loginApi()
-                .map { LoginValidation.State.LOGIN_TAKEN }
+                .map {
+                    if (it) {
+                        LoginValidation.State.LOGIN_AVAILABLE
+                    } else {
+                        LoginValidation.State.LOGIN_TAKEN
+                    }
+                }
                 .toObservable()
                 .startWith(LoginValidation.State.IN_PROGRESS)
     }
@@ -61,7 +75,8 @@ interface SignUp {
         enum class State {
             IDLE,
             IN_PROGRESS,
-            LOGIN_TAKEN
+            LOGIN_TAKEN,
+            LOGIN_AVAILABLE
         }
     }
 }
