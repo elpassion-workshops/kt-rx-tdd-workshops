@@ -85,6 +85,12 @@ class SignUpReducerTest {
     }
 
     @Test
+    fun shouldShowLoadingImmediatelyAfterUserTypesLogin() {
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
+    }
+
+    @Test
     fun shouldPhotoStateBeEmptyAtTheBegging() {
         state.assertLastValueThat { photoValidation == PhotoValidation.State.EMPTY }
     }
@@ -146,17 +152,19 @@ class SignUpReducer(
     private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .debounce(5, TimeUnit.SECONDS, debounceScheduler)
-                .switchMap {
-                    if (it.login.isEmpty()) {
+                .switchMap { event ->
+                    if (event.login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
-                        api.invoke(it.login)
-                                .map {
-                                    if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.TAKEN
+                        Single.timer(5, TimeUnit.SECONDS, debounceScheduler)
+                                .flatMapObservable {
+                                    api.invoke(event.login)
+                                            .map {
+                                                if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.TAKEN
+                                            }
+                                            .toObservable()
+                                            .onErrorReturnItem(LoginValidation.State.ERROR)
                                 }
-                                .toObservable()
-                                .onErrorReturnItem(LoginValidation.State.ERROR)
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
                 }
