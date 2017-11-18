@@ -82,11 +82,15 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted() {
+        val imageUri = "image Url"
         events.accept(Photo.TakePhotoEvent)
         permissionProvider.onSuccess(true)
-        cameraSubject.onSuccess("image uri")
-        state.assertLastValueThat { photoState is Photo.State.Taken }
+        cameraSubject.onSuccess(imageUri)
+        state.assertLastValueThat {
+            photoState is Photo.State.Taken &&
+                    photoState.uri == imageUri
+        }
     }
 }
 
@@ -104,11 +108,11 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>,
                     .filter { hasCameraPermission -> hasCameraPermission }
                     .flatMapObservable {
                         camera()
-                                .map {
-                                    if (it.isEmpty()) {
+                                .map { uri ->
+                                    if (uri.isEmpty()) {
                                         Photo.State.Empty
                                     } else {
-                                        Photo.State.Taken
+                                        Photo.State.Taken(uri)
                                     }
                                 }
                                 .toObservable()
@@ -149,7 +153,7 @@ interface SignUp {
 
         sealed class State {
             object Empty : Photo.State()
-            object Taken : Photo.State()
+            class Taken(val uri: String) : Photo.State()
         }
 
         object TakePhotoEvent
