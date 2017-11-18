@@ -37,34 +37,34 @@ class SignUpActivityTest {
 
     @Test
     fun shouldShowLoadingValidationStateOnLoginInput() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_loading)
     }
 
     @Test
     fun shouldShowLoginAvailableValidationState() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         loginApiSubject.onSuccess(true)
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_available)
     }
 
     @Test
     fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         loginApiSubject.onSuccess(false)
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_taken)
     }
 
     @Test
     fun shouldShowLoginValidationErrorWhenApiReturnsError() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         loginApiSubject.onError(RuntimeException())
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_error)
     }
 
     @Test
     fun shouldShowIdleLoginValidationStateWhenLoginErased() {
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         onId(R.id.loginInput).replaceText("")
         onId(R.id.loginIndicator).hasText(R.string.login_indicator_idle)
     }
@@ -74,5 +74,14 @@ class SignUpActivityTest {
         onId(R.id.takePhotoButton).click()
         cameraPermission.onSuccess(true)
         Assert.assertTrue(camera.hasObservers())
+    }
+
+    @Test
+    fun shouldTakePhotoButtonHasProperText() {
+        onId(R.id.takePhotoButton).hasText(R.string.take_photo)
+    }
+
+    @Test
+    fun shouldRegisterButtonBeVisible(){
     }
 }
