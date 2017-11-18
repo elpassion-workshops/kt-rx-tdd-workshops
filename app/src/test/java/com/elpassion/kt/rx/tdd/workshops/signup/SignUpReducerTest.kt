@@ -17,7 +17,7 @@ class SignUpReducerTest {
     private val events = PublishRelay.create<Any>()
     private val apiSubject = SingleSubject.create<Boolean>()
 
-    private val apiMock = mock<(String)-> SingleSubject<Boolean>> {
+    private val apiMock = mock<(String) -> SingleSubject<Boolean>> {
         on {
             invoke(any())
         }.thenReturn(apiSubject)
@@ -63,7 +63,7 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldShowErrorWhenApiReturnsError(){
+    fun shouldShowErrorWhenApiReturnsError() {
         events.accept(LoginValidation.LoginChangedEvent("a"))
         apiSubject.onError(RuntimeException())
         state.assertLastValueThat { loginValidation == LoginValidation.State.APIFAIL }
@@ -72,7 +72,7 @@ class SignUpReducerTest {
 
 }
 
-class SignUpReducer(val api: (login:String) -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(val api: (login: String) -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap { (login) ->
