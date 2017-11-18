@@ -30,6 +30,9 @@ class SignUpActivity : RxActivity() {
                         SignUp.LoginValidation.State.NOT_AVAILABLE -> {
                             indicator.setText(R.string.taken)
                         }
+                        SignUp.LoginValidation.State.ERROR -> {
+                            indicator.setText(R.string.error_message)
+                        }
                     }
                 }
     }

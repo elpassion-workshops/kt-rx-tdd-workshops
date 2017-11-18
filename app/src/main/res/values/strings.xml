@@ -4,4 +4,5 @@
     <string name="loading">loading</string>
     <string name="idle">idle</string>
     <string name="taken">taken</string>
+    <string name="error_message">Login checker failed</string>
 </resources>
