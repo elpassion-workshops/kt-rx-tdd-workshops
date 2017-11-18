@@ -1,5 +1,6 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import com.elpassion.kt.rx.tdd.workshops.assertLastValue
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
@@ -20,8 +21,9 @@ class SignUpReducerTest {
     private val api = mock<(String) -> Single<Boolean>>().apply {
         whenever(this.invoke(any())).thenReturn(apiSubject)
     }
+    private val cameraMock = mock<() -> Single<String>>()
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer(api).invoke(events).test()
+    private val state = SignUpReducer(api, cameraMock).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -74,10 +76,18 @@ class SignUpReducerTest {
     fun shouldPhotoStateBeEmptyAtTheBegging() {
         state.assertLastValueThat { photoState == Photo.State.EMPTY }
     }
+
+    @Test
+    fun shouldCallCameraWhenTakingPhoto(){
+        events.accept(Photo.TakePhotoEvent)
+        verify(cameraMock).invoke()
+    }
 }
 
-class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
+                    private val cameraApi: () -> Single<String>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        cameraApi.invoke()
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap { (login) ->
@@ -123,5 +133,9 @@ interface SignUp {
         enum class State{
             EMPTY,
         }
+
+        object TakePhotoEvent {
+        }
+
     }
 }
