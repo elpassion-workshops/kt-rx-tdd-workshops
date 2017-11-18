@@ -83,4 +83,8 @@ class SignUpActivityTest {
         cameraSubject.onSuccess(testBitmap.first)
         onId(R.id.photoPreview).hasBitmap(testBitmap.second)
     }
+    @Test
+    fun shouldTakePhotoButtonHasProperText(){
+        onId(R.id.photoButton).hasText("take a photo")
+    }
 }
