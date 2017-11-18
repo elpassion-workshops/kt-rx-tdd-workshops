@@ -97,10 +97,20 @@ class SignUpReducerTest {
 
     @Test
     fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
+        val photoPath = "different photo path"
         permissionSubject.onSuccess(true)
-        cameraSubject.onSuccess("photo path")
+        cameraSubject.onSuccess(photoPath)
         events.accept(PhotoValidation.PhotoEvent())
-        state.assertLastValueThat { photoValidation == PhotoValidation.State.RETURNED("") }
+        state.assertLastValueThat { photoValidation == PhotoValidation.State.RETURNED(photoPath) }
+    }
+
+    @Test
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted() {
+        permissionSubject.onSuccess(true)
+        val photoPath = "photo path"
+        events.accept(PhotoValidation.PhotoEvent())
+        cameraSubject.onSuccess(photoPath)
+        state.assertLastValueThat { photoValidation == PhotoValidation.State.RETURNED(photoPath) }
     }
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
@@ -140,7 +150,7 @@ class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Mayb
                     permission.invoke()
                             .filter { it }
                             .flatMap {
-                                camera.invoke().map { PhotoValidation.State.RETURNED("") }
+                                camera.invoke().map { PhotoValidation.State.RETURNED(it) }
                             }
                 }
                 .startWith(PhotoValidation.State.EMPTY)
