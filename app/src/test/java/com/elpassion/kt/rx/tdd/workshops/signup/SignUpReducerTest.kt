@@ -36,18 +36,23 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
-        val login = "a"
-        events.accept(LoginValidation.LoginChangedEvent(login))
-        apiSubject.onSuccess(true)
-        state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
+        validatePassedLoginString("s", true, LoginValidation.State.AVAILABLE)
     }
 
     @Test
     fun shouldLoginValidationStateBeTakenWhenApiFails() {
-        val login = "a"
+        validatePassedLoginString("a", false,  LoginValidation.State.TAKEN)
+    }
+
+    @Test
+    fun shouldValidateLoginUsingPassedLogin() {
+        validatePassedLoginString("bsdfsdfsd", true, LoginValidation.State.AVAILABLE)
+    }
+
+    private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
-        apiSubject.onSuccess(false)
-        state.assertLastValueThat { loginValidation == LoginValidation.State.TAKEN }
+        apiSubject.onSuccess(validated)
+        state.assertLastValueThat { loginValidation == requiredState }
     }
 }
 
