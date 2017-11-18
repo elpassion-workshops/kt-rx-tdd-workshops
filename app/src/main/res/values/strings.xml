@@ -3,4 +3,5 @@
     <string name="app_name">KtRxTddApplication</string>
     <string name="loginValidationLoading">Loading...</string>
     <string name="loginValidationAvailable">Login available</string>
+    <string name="loginValidationIsTaken">Login is taken</string>
 </resources>

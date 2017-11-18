@@ -25,6 +25,7 @@ class SignUpActivity : RxActivity() {
                     when (it) {
                         SignUp.LoginValidation.State.AVAILABLE -> login_validation_label.setText(R.string.loginValidationAvailable)
                         SignUp.LoginValidation.State.IDLE -> login_validation_label.setText(R.string.loginValidationIdle)
+                        SignUp.LoginValidation.State.ISTAKEN -> login_validation_label.setText(R.string.loginValidationIsTaken)
                         else -> login_validation_label.setText(R.string.loginValidationLoading)
                     }
                 }
