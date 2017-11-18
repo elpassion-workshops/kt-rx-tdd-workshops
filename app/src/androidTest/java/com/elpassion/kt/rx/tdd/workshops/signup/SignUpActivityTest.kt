@@ -3,6 +3,8 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import android.support.test.rule.ActivityTestRule
 import com.elpassion.android.commons.espresso.*
 import com.elpassion.kt.rx.tdd.workshops.R
+import com.elpassion.kt.rx.tdd.workshops.createTestBitmap
+import com.elpassion.kt.rx.tdd.workshops.hasBitmap
 import io.reactivex.subjects.MaybeSubject
 import io.reactivex.subjects.SingleSubject
 import org.junit.Assert
@@ -81,5 +83,12 @@ class SignUpActivityTest {
         onId(R.id.takePhotoButton).hasText(R.string.take_photo)
     }
 
-
+    @Test
+    fun shouldDisplayReceivedPhotoInImageView() {
+        onId(R.id.takePhotoButton).click()
+        val (uri, bitmap) = createTestBitmap()
+        cameraPermission.onSuccess(true)
+        camera.onSuccess(uri)
+        onId(R.id.photo).hasBitmap(bitmap)
+    }
 }

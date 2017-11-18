@@ -5,6 +5,7 @@ import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.camera
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.cameraPermission
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.Companion.loginApi
+import com.elpassion.kt.rx.tdd.workshops.utils.setImageFromStorage
 import com.jakewharton.rxbinding2.view.clicks
 import com.jakewharton.rxbinding2.widget.textChanges
 import com.trello.rxlifecycle2.components.RxActivity
@@ -32,6 +33,9 @@ class SignUpActivity : RxActivity() {
             SignUp.LoginValidation.State.AVAILABLE -> loginIndicator.setText(R.string.login_indicator_available)
             SignUp.LoginValidation.State.TAKEN -> loginIndicator.setText(R.string.login_indicator_taken)
             SignUp.LoginValidation.State.ERROR -> loginIndicator.setText(R.string.login_indicator_error)
+        }
+        when (state.photoState) {
+            is SignUp.Photo.State.Taken -> photo.setImageFromStorage(state.photoState.uri)
         }
     }
 
