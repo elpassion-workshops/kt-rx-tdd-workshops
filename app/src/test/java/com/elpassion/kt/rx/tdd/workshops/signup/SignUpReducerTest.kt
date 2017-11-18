@@ -95,11 +95,15 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) :
                 }
                 .subscribe()
 
+        return loginValidationReducer(events)
+                .map { State(it, AddPhoto.State.EMPTY) }
+    }
+
+    private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap(this::processUserLogin)
                 .startWith(LoginValidation.State.IDLE)
-                .map { State(it, AddPhoto.State.EMPTY) }
     }
 
     private fun processUserLogin(event: LoginValidation.LoginChangedEvent) = with(event) {
