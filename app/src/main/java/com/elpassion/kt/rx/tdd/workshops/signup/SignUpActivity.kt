@@ -28,6 +28,7 @@ class SignUpActivity : RxActivity() {
             SignUp.LoginValidation.State.IN_PROGRESS -> loginIndicator.setText(R.string.login_indicator_loading)
             SignUp.LoginValidation.State.AVAILABLE -> loginIndicator.setText(R.string.login_indicator_available)
             SignUp.LoginValidation.State.TAKEN -> loginIndicator.setText(R.string.login_indicator_taken)
+            SignUp.LoginValidation.State.ERROR -> loginIndicator.setText(R.string.login_indicator_error)
         }
     }
 
