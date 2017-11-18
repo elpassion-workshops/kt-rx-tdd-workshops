@@ -5,10 +5,12 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
+import java.util.concurrent.TimeoutException
 
 class SignUpReducerTest {
 
@@ -49,6 +51,15 @@ class SignUpReducerTest {
         validatePassedLoginString("bsdfsdfsd", true, LoginValidation.State.AVAILABLE)
     }
 
+    @Test
+    fun shouldShowErrorWhenApiReturnsError() {
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        apiSubject.onError(TimeoutException())
+        state.assertLastValueThat { loginValidation == LoginValidation.State.ERROR }
+    }
+
+
+
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
         apiSubject.onSuccess(validated)
@@ -69,6 +80,7 @@ class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
                                     if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.TAKEN
                                 }
                                 .toObservable()
+                                .onErrorReturnItem(LoginValidation.State.ERROR)
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
                 }
@@ -87,7 +99,8 @@ interface SignUp {
             IDLE,
             IN_PROGRESS,
             AVAILABLE,
-            TAKEN
+            TAKEN,
+            ERROR
         }
     }
 }
