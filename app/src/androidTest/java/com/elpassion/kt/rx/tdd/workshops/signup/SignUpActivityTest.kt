@@ -94,4 +94,9 @@ class SignUpActivityTest {
         cameraSubject.onSuccess("test")
         verify(camera).call()
     }
+
+    @Test
+    fun shouldTakePhotoButtonHasProperText() {
+        onId(R.id.takePhoto).hasText("Take Photo")
+    }
 }
