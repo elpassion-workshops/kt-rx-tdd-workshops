@@ -27,7 +27,7 @@ class SignUpReducerTest {
         }.thenReturn(apiSubject)
     }
 
-    private val state = SignUpReducer(apiMock,{cameraSubject}).invoke(events).test()
+    private val state = SignUpReducer(apiMock, { cameraSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -79,7 +79,7 @@ class SignUpReducerTest {
     }
 
     @Test
-    fun shouldCallCameraWhenTakingPhoto(){
+    fun shouldCallCameraWhenTakingPhoto() {
         events.accept(Photo.TakePhotoEvent)
         cameraSubject.onSuccess("photoURI")
         state.assertLastValueThat { photoState == SignUp.Photo.State.Photo("photoURI") }
@@ -89,17 +89,15 @@ class SignUpReducerTest {
 }
 
 class SignUpReducer(val api: (login: String) -> Single<Boolean>,
-                    val cameraApi: ()->Maybe<String>
+                    val cameraApi: () -> Maybe<String>
 ) : Reducer<SignUp.State> {
-    override fun invoke(events: Events): Observable<SignUp.State> {
-        return Observables.combineLatest(loginChangedEvents(events), takePhotoEvents(events), SignUp::State)
-    }
+    override fun invoke(events: Events): Observable<SignUp.State> =
+            Observables.combineLatest(loginChangedEvents(events), takePhotoEvents(events), SignUp::State)
 
     private fun takePhotoEvents(events: Events): Observable<Photo.State> {
         return events.ofType(Photo.TakePhotoEvent::class.java)
                 .switchMap { cameraApi.invoke().toObservable() }
-                .map { Photo.State.Photo(it) }
-                .cast(Photo.State::class.java)
+                .map<Photo.State> { Photo.State.Photo(it) }
                 .startWith(Photo.State.Empty)
     }
 
@@ -127,7 +125,7 @@ class SignUpReducer(val api: (login: String) -> Single<Boolean>,
 
 interface SignUp {
 
-    interface Photo{
+    interface Photo {
         object TakePhotoEvent
 
         sealed class State {
@@ -136,8 +134,7 @@ interface SignUp {
         }
     }
 
-    data class State(val loginValidation: LoginValidation.State,val photoState :Photo.State)
-
+    data class State(val loginValidation: LoginValidation.State, val photoState: Photo.State)
 
 
     interface LoginValidation {
