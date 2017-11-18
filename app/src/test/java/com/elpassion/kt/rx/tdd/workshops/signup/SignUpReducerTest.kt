@@ -47,6 +47,13 @@ class SignUpReducerTest {
         loginApiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.TAKEN }
     }
+
+    @Test
+    fun shouldShowErrorWhenApiReturnsError() {
+        events.accept(LoginValidation.LoginChangedEvent("login"))
+        loginApiSubject.onError(RuntimeException())
+        state.assertLastValueThat { loginValidation == LoginValidation.State.ERROR }
+    }
 }
 
 class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignUp.State> {
@@ -74,6 +81,9 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignU
                 }
             }.toObservable()
                     .startWith(LoginValidation.State.IN_PROGRESS)
+                    .onErrorReturn {
+                        LoginValidation.State.ERROR
+                    }
 }
 
 interface SignUp {
@@ -86,7 +96,8 @@ interface SignUp {
             IDLE,
             IN_PROGRESS,
             AVAILABLE,
-            TAKEN
+            TAKEN,
+            ERROR
         }
     }
 }
