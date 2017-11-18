@@ -7,10 +7,13 @@ import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.rxkotlin.Observables
+import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class SignUpReducerTest {
 
@@ -21,7 +24,8 @@ class SignUpReducerTest {
     private val camera: Camera = mock { on { call() } doReturn cameraSubject }
     private val systemSubject = SingleSubject.create<Boolean>()
     private val system: System = mock { on { cameraPermission() } doReturn systemSubject }
-    private val state = SignUpReducer(loginApi, camera, system).invoke(events).test()
+    private val scheduler = TestScheduler()
+    private val state = SignUpReducer(loginApi, camera, system, scheduler).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -31,18 +35,21 @@ class SignUpReducerTest {
     @Test
     fun shouldLoginValidationStateBeInProgressAfterUserTypeLogin() {
         events.accept(LoginValidation.LoginChangedEvent("a"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
 
     @Test
     fun shouldLoginValidationStateBeIdleAfterErasingLogin() {
         events.accept(LoginValidation.LoginChangedEvent(""))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
     }
 
     @Test
     fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
         events.accept(LoginValidation.LoginChangedEvent("a"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         loginApiSubject.onSuccess(true)
         state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
     }
@@ -50,6 +57,7 @@ class SignUpReducerTest {
     @Test
     fun shouldLoginValidationStateBeNotAvailableWhenApiReturnsThatItIsTaken() {
         events.accept(LoginValidation.LoginChangedEvent("b"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         loginApiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.NOT_AVAILABLE }
     }
@@ -57,12 +65,14 @@ class SignUpReducerTest {
     @Test
     fun shouldValidateLoginUsingPassedLogin() {
         events.accept(LoginValidation.LoginChangedEvent("b"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         verify(loginApi).checkLogin("b")
     }
 
     @Test
     fun shouldShowErrorWhenApiReturnsError() {
         events.accept(LoginValidation.LoginChangedEvent("b"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
         loginApiSubject.onError(Throwable("Error"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.API_ERROR }
     }
@@ -94,9 +104,17 @@ class SignUpReducerTest {
         cameraSubject.onSuccess(uri)
         state.assertLastValueThat { addPhoto == AddPhoto.State.PhotoTaken(uri) }
     }
+
+    @Test
+    fun shouldCallApiOnceIfTwoLoginChangedEventsSentOneAfterAnother() {
+        events.accept(LoginValidation.LoginChangedEvent("b"))
+        events.accept(LoginValidation.LoginChangedEvent("bc"))
+        scheduler.advanceTimeBy(1001, TimeUnit.MILLISECONDS)
+        verify(loginApi).checkLogin(any())
+    }
 }
 
-class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) : Reducer<SignUp.State> {
+class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System, val scheduler: Scheduler) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
 
         return Observables.combineLatest(loginValidationReducer(events), photoValidationReducer(events))
@@ -106,6 +124,7 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) :
     private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
+                .debounce(1, TimeUnit.SECONDS, scheduler)
                 .switchMap(this::processUserLogin)
                 .startWith(LoginValidation.State.IDLE)
     }
@@ -120,7 +139,6 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) :
                             .map { AddPhoto.State.PhotoTaken(it) as AddPhoto.State }
                             .toObservable()
                 }
-
                 .startWith(AddPhoto.State.EMPTY)
     }
 
@@ -129,9 +147,9 @@ class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) :
             Observable.just(LoginValidation.State.IDLE)
         } else {
             api.checkLogin(login)
+                    .toObservable()
                     .map { if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.NOT_AVAILABLE }
                     .onErrorReturn { LoginValidation.State.API_ERROR }
-                    .toObservable()
                     .startWith(LoginValidation.State.IN_PROGRESS)
         }
     }
