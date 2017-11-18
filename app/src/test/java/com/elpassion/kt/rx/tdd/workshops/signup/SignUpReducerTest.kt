@@ -5,10 +5,7 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -21,6 +18,7 @@ import java.util.concurrent.TimeoutException
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
+    private val permissionSubject = SingleSubject.create<Boolean>()
     private val apiSubject = SingleSubject.create<Boolean>()
     private val api = mock<(String) -> Single<Boolean>> {
         on { invoke(any()) }.thenReturn(apiSubject)
@@ -29,7 +27,7 @@ class SignUpReducerTest {
         on { invoke() }.thenReturn(cameraSubject)
     }
     private val cameraSubject = MaybeSubject.create<String>()
-    private val state = SignUpReducer(api, camera).invoke(events).test()
+    private val state = SignUpReducer(api, camera, { permissionSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -81,12 +79,20 @@ class SignUpReducerTest {
     @Test
     fun shouldCallCameraWhenTakingPhoto() {
         events.accept(PhotoValidation.PhotoEvent())
+        permissionSubject.onSuccess(true)
         verify(camera).invoke()
     }
 
     @Test
     fun shouldNotCallCameraBeforeEmittingEvent() {
         verify(camera, times(0)).invoke()
+    }
+
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
+        events.accept(PhotoValidation.PhotoEvent())
+        permissionSubject.onSuccess(false)
+        verify(camera, never()).invoke()
     }
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
@@ -96,7 +102,7 @@ class SignUpReducerTest {
     }
 }
 
-class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Maybe<String>) : Reducer<SignUp.State> {
+class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Maybe<String>, val permission: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> =
             combineLatest(loginValidationReducer(events), photoValidationReducer(events), SignUp::State)
 
@@ -122,8 +128,11 @@ class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Mayb
     private fun photoValidationReducer(events: Events): Observable<PhotoValidation.State> {
         return events
                 .ofType(PhotoValidation.PhotoEvent::class.java)
+                .flatMapSingle {
+                    permission.invoke()
+                }
                 .flatMapMaybe<PhotoValidation.State> {
-                    camera.invoke().map { PhotoValidation.State.RETURNED(it) }
+                    if (it) camera.invoke().map { PhotoValidation.State.RETURNED(it) } else Maybe.empty()
                 }
                 .startWith(PhotoValidation.State.EMPTY)
     }
