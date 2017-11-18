@@ -5,10 +5,7 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.verifyZeroInteractions
+import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -96,12 +93,18 @@ class SignUpReducerTest {
     fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
         events.accept(Photo.TakePhotoEvent)
         permissionsSubject.onSuccess(false)
-        cameraSubject.onSuccess("photoURI")
-        state.assertLastValueThat { photoState == SignUp.Photo.State.Empty }
+        verify(cameraMock, never()).invoke()
     }
 
     @Test
     fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted(){
+        events.accept(Photo.TakePhotoEvent)
+        permissionsSubject.onSuccess(true)
+        assert(cameraSubject.hasObservers())
+    }
+
+    @Test
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted(){
         events.accept(Photo.TakePhotoEvent)
         permissionsSubject.onSuccess(true)
         cameraSubject.onSuccess("photoURI")
