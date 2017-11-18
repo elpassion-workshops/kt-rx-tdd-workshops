@@ -45,6 +45,13 @@ class SignUpReducerTest {
         loginApiSubject.onSuccess(true)
         state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
     }
+
+    @Test
+    fun shouldLoginValidationStateBeNotAvailableWhenApiReturnsThatItIsTaken() {
+        events.accept(LoginValidation.LoginChangedEvent("b"))
+        loginApiSubject.onSuccess(false)
+        state.assertLastValueThat { loginValidation == LoginValidation.State.NOT_AVAILABLE }
+    }
 }
 
 class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
@@ -56,9 +63,7 @@ class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
                         api.checkLogin()
-                                .map {
-                                    LoginValidation.State.AVAILABLE
-                                }
+                                .map { if (it) LoginValidation.State.AVAILABLE else LoginValidation.State.NOT_AVAILABLE }
                                 .toObservable()
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
@@ -77,7 +82,8 @@ interface SignUp {
         enum class State {
             IDLE,
             IN_PROGRESS,
-            AVAILABLE
+            AVAILABLE,
+            NOT_AVAILABLE
         }
     }
 }
