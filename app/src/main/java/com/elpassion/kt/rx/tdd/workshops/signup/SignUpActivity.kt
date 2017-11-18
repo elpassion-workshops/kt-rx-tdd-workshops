@@ -1,7 +1,6 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
 import android.os.Bundle
-import android.util.Log
 import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.SignUpDI
 import com.jakewharton.rxbinding2.widget.textChanges
@@ -27,6 +26,9 @@ class SignUpActivity : RxActivity() {
                         }
                         SignUp.LoginValidation.State.AVAILABLE -> {
                             indicator.setText(R.string.available)
+                        }
+                        SignUp.LoginValidation.State.NOT_AVAILABLE -> {
+                            indicator.setText(R.string.taken)
                         }
                     }
                 }

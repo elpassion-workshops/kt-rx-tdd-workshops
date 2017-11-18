@@ -3,4 +3,5 @@
     <string name="available">available</string>
     <string name="loading">loading</string>
     <string name="idle">idle</string>
+    <string name="taken">taken</string>
 </resources>
