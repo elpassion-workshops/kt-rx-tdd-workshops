@@ -78,15 +78,15 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>)
                 .map(SignUp::State)
     }
 
-    private fun validateLogin(login: String): Observable<LoginValidation.State> {
-        return loginValidationApi.invoke(login).toObservable().map {
-            if (it) {
-                LoginValidation.State.AVAILABLE
-            } else {
-                LoginValidation.State.NOT_AVAILABLE
-            }
-        }.startWith(LoginValidation.State.IN_PROGRESS)
-    }
+    private fun validateLogin(login: String) = loginValidationApi.invoke(login)
+            .toObservable()
+            .map {
+                if (it) {
+                    LoginValidation.State.AVAILABLE
+                } else {
+                    LoginValidation.State.NOT_AVAILABLE
+                }
+            }.startWith(LoginValidation.State.IN_PROGRESS)
 }
 
 interface SignUp {
