@@ -106,15 +106,9 @@ class SignUpReducer(private val loginApi: () -> Single<Boolean>,
     private fun handleTakePhotoEvents(): Observable<Photo.State> =
             cameraPermission()
                     .filter { hasCameraPermission -> hasCameraPermission }
-                    .flatMapObservable {
+                    .flatMapObservable<Photo.State> {
                         camera()
-                                .map { uri ->
-                                    if (uri.isEmpty()) {
-                                        Photo.State.Empty
-                                    } else {
-                                        Photo.State.Taken(uri)
-                                    }
-                                }
+                                .map { uri -> Photo.State.Taken(uri) }
                                 .toObservable()
                     }
                     .startWith(Photo.State.Empty)
