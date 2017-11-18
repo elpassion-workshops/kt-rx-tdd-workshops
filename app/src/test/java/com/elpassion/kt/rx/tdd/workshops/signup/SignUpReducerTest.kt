@@ -17,7 +17,9 @@ class SignUpReducerTest {
     private val loginApiSubject = SingleSubject.create<Boolean>()
     private val loginApi: LoginApi = mock { on { checkLogin(any()) } doReturn loginApiSubject }
     private val camera: Camera = mock()
-    private val state = SignUpReducer(loginApi, camera).invoke(events).test()
+    private val systemSubject = SingleSubject.create<Boolean>()
+    private val system: System = mock { on { cameraPermission() } doReturn systemSubject }
+    private val state = SignUpReducer(loginApi, camera, system).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -71,14 +73,26 @@ class SignUpReducerTest {
     @Test
     fun shouldCallCameraWhenTakingPhoto() {
         events.accept(AddPhoto.TakePhotoEvent)
+        systemSubject.onSuccess(true)
         verify(camera).call()
+    }
+
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
+        events.accept(AddPhoto.TakePhotoEvent)
+        systemSubject.onSuccess(false)
+        verify(camera, never()).call()
     }
 }
 
-class SignUpReducer(val api: LoginApi, val camera: Camera) : Reducer<SignUp.State> {
+class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         events.ofType(AddPhoto.TakePhotoEvent::class.java)
-                .doOnNext { camera.call() }
+                .flatMapSingle { system.cameraPermission() }
+                .filter { it }
+                .doOnNext {
+                    camera.call()
+                }
                 .subscribe()
 
         return events
@@ -133,4 +147,8 @@ interface LoginApi {
 
 interface Camera {
     fun call()
+}
+
+interface System {
+    fun cameraPermission(): Single<Boolean>
 }
