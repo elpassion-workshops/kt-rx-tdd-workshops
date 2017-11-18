@@ -1,19 +1,17 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
-import com.elpassion.kt.rx.tdd.workshops.assertLastValue
 import com.elpassion.kt.rx.tdd.workshops.assertLastValueThat
 import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.functions.BiConsumer
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
+import org.reactivestreams.Subscriber
 
 class SignUpReducerTest {
 
@@ -23,7 +21,12 @@ class SignUpReducerTest {
     }
     private val cameraMock = mock<() -> Single<String>>()
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer(api, cameraMock).invoke(events).test()
+
+    private val permissionSubject = SingleSubject.create<Boolean>()
+    private val permission = mock<(() -> Single<Boolean>)>().apply {
+        whenever(this.invoke()).thenReturn(permissionSubject);
+    }
+    private val state = SignUpReducer(api, cameraMock, permission).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -80,14 +83,33 @@ class SignUpReducerTest {
     @Test
     fun shouldCallCameraWhenTakingPhoto(){
         events.accept(Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(true)
         verify(cameraMock).invoke()
+    }
+
+    @Test
+    fun shouldNotCallCameraWithoutPermissionsWhenTakingPhoto() {
+        events.accept(Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(false)
+        verify(cameraMock, never()).invoke()
     }
 }
 
 class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
-                    private val cameraApi: () -> Single<String>) : Reducer<SignUp.State> {
+                    private val cameraApi: () -> Single<String>,
+                    private val permission: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
-        cameraApi.invoke()
+        permission().subscribe { hasPermission ->
+                if(hasPermission) {
+                    cameraApi.invoke()
+                }
+        }
+
+        return loginValidationReducer(events)
+                .map {State(it)}
+    }
+
+    private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap { (login) ->
@@ -98,7 +120,6 @@ class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
                     }
                 }
                 .startWith(LoginValidation.State.IDLE)
-                .map {State(it)}
     }
 
     private fun validateLogin(login: String) = loginValidationApi.invoke(login)
