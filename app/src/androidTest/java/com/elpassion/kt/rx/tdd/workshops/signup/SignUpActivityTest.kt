@@ -8,7 +8,6 @@ import com.elpassion.kt.rx.tdd.workshops.R
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
 import org.junit.Rule
@@ -63,5 +62,13 @@ class SignUpActivityTest {
         testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
         loginApiSubject.onSuccess(false)
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.NOT_AVAILABLE.toString())
+    }
+
+    @Test
+    fun shouldShowLoginValidationErrorWhenApiReturnsError() {
+        onId(R.id.loginInput).typeText("a")
+        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        loginApiSubject.onError(Throwable())
+        onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.API_ERROR.toString())
     }
 }
