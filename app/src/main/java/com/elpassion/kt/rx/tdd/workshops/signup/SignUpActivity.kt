@@ -17,6 +17,7 @@ class SignUpActivity : RxActivity() {
                 .invoke(singUpLogin.textChanges().map { SignUp.LoginValidation.LoginChangedEvent(it.toString()) })
                 .subscribe {
                     when (it.loginValidation) {
+                        SignUp.LoginValidation.State.IDLE -> signUpProgress.setText(R.string.idle)
                         SignUp.LoginValidation.State.IN_PROGRESS -> signUpProgress.setText(R.string.loading)
                         SignUp.LoginValidation.State.AVAILABLE -> signUpProgress.setText(R.string.available)
                         SignUp.LoginValidation.State.TAKEN -> signUpProgress.setText(R.string.taken)

@@ -66,4 +66,10 @@ class SignUpActivityTest {
         apiSubject.onError(RuntimeException())
         onId(R.id.signUpProgress).hasText(R.string.api_error)
     }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased() {
+        onId(R.id.singUpLogin).replaceText("a").replaceText("")
+        onId(R.id.signUpProgress).hasText(R.string.idle)
+    }
 }
