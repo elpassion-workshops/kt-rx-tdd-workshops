@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">KtRxTddApplication</string>
+
+    <string name="login_indicator_idle">Idle</string>
+    <string name="login_indicator_loading">Loading</string>
 </resources>
