@@ -38,6 +38,13 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent(""))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
     }
+
+    @Test
+    fun shouldLoginValidationStateBeNotAvailableWhenApiReturnsThatItIsTaken() {
+        events.accept(LoginValidation.LoginChangedEvent("b"))
+        apiSubject.onSuccess(false)
+        state.assertLastValueThat { loginValidation == LoginValidation.State.ISTAKEN }
+    }
 }
 
 class SignUpReducer(val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
@@ -49,7 +56,10 @@ class SignUpReducer(val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.Stat
                     } else {
                         api.invoke()
                                 .toObservable()
-                                .map { LoginValidation.State.AVAILABLE }
+                                .map {
+                                    if (it) LoginValidation.State.AVAILABLE
+                                    else LoginValidation.State.ISTAKEN
+                                }
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
                 }
@@ -69,6 +79,7 @@ interface SignUp {
             IDLE,
             IN_PROGRESS,
             AVAILABLE,
+            ISTAKEN
         }
     }
 }
