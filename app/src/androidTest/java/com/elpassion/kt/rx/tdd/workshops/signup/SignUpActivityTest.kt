@@ -25,7 +25,6 @@ class SignUpActivityTest {
     @Rule
     val rule = object : ActivityTestRule<SignUpActivity>(SignUpActivity::class.java) {
         override fun beforeActivityLaunched() {
-            super.beforeActivityLaunched()
             SignUpDI.api = mock { on { invoke(any())} doReturn apiSubject}
             SignUpDI.cameraApi = mock { on { invoke() } doReturn cameraSubject }
             SignUpDI.permission = mock { on { invoke() } doReturn permissionSubject }
@@ -46,5 +45,12 @@ class SignUpActivityTest {
     fun shouldShowLoadingValidationState(){
         onId(R.id.loginInput).typeText("login")
         onId(R.id.indicator).hasText("loading")
+    }
+
+    @Test
+    fun shouldShowLoginAvailableValidationState() {
+        onId(R.id.loginInput).typeText("login")
+        apiSubject.onSuccess(true)
+        onId(R.id.indicator).hasText("available")
     }
 }
