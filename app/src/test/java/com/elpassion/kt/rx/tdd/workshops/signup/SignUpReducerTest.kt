@@ -5,6 +5,9 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
@@ -13,7 +16,14 @@ class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
     private val apiSubject = SingleSubject.create<Boolean>()
-    private val state = SignUpReducer({ apiSubject }).invoke(events).test()
+
+    private val apiMock = mock<(String)-> SingleSubject<Boolean>> {
+        on {
+            invoke(any())
+        }.thenReturn(apiSubject)
+    }
+
+    private val state = SignUpReducer(apiMock).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -45,16 +55,24 @@ class SignUpReducerTest {
         apiSubject.onSuccess(false)
         state.assertLastValueThat { loginValidation == LoginValidation.State.ISTAKEN }
     }
+
+    @Test
+    fun shouldValidateLoginUsingPassedLogin() {
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        verify(apiMock).invoke("a")
+    }
+
+
 }
 
-class SignUpReducer(val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
+class SignUpReducer(val api: (login:String) -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap { (login) ->
                     if (login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
-                        api.invoke()
+                        api.invoke(login)
                                 .toObservable()
                                 .map {
                                     if (it) LoginValidation.State.AVAILABLE
