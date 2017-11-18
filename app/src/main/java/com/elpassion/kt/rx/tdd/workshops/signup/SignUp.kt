@@ -1,5 +1,8 @@
 package com.elpassion.kt.rx.tdd.workshops.signup
 
+import io.reactivex.Maybe
+import io.reactivex.Single
+
 interface SignUp {
     data class State(val loginValidation: LoginValidation.State, val photoState: Photo.State)
 
@@ -23,5 +26,11 @@ interface SignUp {
             TAKEN,
             ERROR
         }
+    }
+
+    companion object {
+        lateinit var loginApi: () -> Single<Boolean>
+        lateinit var camera: () -> Maybe<String>
+        lateinit var cameraPermission: () -> Single<Boolean>
     }
 }
