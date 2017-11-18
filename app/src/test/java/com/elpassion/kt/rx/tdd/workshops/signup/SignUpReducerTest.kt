@@ -5,7 +5,6 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
-import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.subjects.SingleSubject
@@ -43,7 +42,7 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeTakenWhenApiFails() {
-        validatePassedLoginString("a", false,  LoginValidation.State.TAKEN)
+        validatePassedLoginString("a", false, LoginValidation.State.TAKEN)
     }
 
     @Test
@@ -58,6 +57,10 @@ class SignUpReducerTest {
         state.assertLastValueThat { loginValidation == LoginValidation.State.ERROR }
     }
 
+    @Test
+    fun shouldPhotoStateBeEmptyAtTheBegging() {
+        state.assertLastValueThat { photoValidation == PhotoValidation.State.EMPTY }
+    }
 
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
@@ -69,6 +72,11 @@ class SignUpReducerTest {
 
 class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        return loginValidationReducer(events)
+                .map { SignUp.State(it, PhotoValidation.State.EMPTY) }
+    }
+
+    private fun loginValidationReducer(events: Events): Observable<LoginValidation.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap {
@@ -85,12 +93,11 @@ class SignUpReducer(val api: () -> Single<Boolean>) : Reducer<SignUp.State> {
                     }
                 }
                 .startWith(LoginValidation.State.IDLE)
-                .map(SignUp::State)
     }
 }
 
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+    data class State(val loginValidation: LoginValidation.State, val photoValidation: PhotoValidation.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
@@ -101,6 +108,13 @@ interface SignUp {
             AVAILABLE,
             TAKEN,
             ERROR
+        }
+    }
+
+    interface PhotoValidation {
+
+        sealed class State {
+            object EMPTY : State()
         }
     }
 }
