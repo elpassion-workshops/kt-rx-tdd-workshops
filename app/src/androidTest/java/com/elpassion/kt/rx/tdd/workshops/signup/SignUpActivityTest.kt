@@ -99,4 +99,9 @@ class SignUpActivityTest {
     fun shouldTakePhotoButtonHasProperText() {
         onId(R.id.takePhoto).hasText("Take Photo")
     }
+
+    @Test
+    fun shouldRegisterButtonBeVisible() {
+        onId(R.id.register).isDisplayed()
+    }
 }
