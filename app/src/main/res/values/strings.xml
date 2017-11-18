@@ -6,4 +6,5 @@
     <string name="taken">Taken</string>
     <string name="api_error">API error</string>
     <string name="add_photo">Add photo</string>
+    <string name="change_photo">Change Photo</string>
 </resources>

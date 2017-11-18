@@ -28,8 +28,8 @@ class SignUpActivity : RxActivity() {
                     }
                     when (it.photoValidation) {
                         is SignUp.PhotoValidation.State.RETURNED -> {
-                            signUpProgress.text = it.photoValidation.path
                             signUpPhoto.setImageFromStorage(it.photoValidation.path)
+                            signUpAddPhoto.setText(R.string.change_photo)
                         }
                     }
                 }

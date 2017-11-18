@@ -88,7 +88,16 @@ class SignUpActivityTest {
         onId(R.id.signUpAddPhoto).click()
         permissions.onSuccess(true)
         camera.onSuccess(testBitmap.first)
-        onId(R.id.signUpProgress).hasText(testBitmap.first)
         onId(R.id.signUpPhoto).hasBitmap(testBitmap.second)
+    }
+
+    @Test
+    fun shouldTakePhotoButtonHasProperText() {
+        val testBitmap = createTestBitmap()
+        onId(R.id.signUpAddPhoto).hasText(R.string.add_photo)
+        onId(R.id.signUpAddPhoto).click()
+        permissions.onSuccess(true)
+        camera.onSuccess(testBitmap.first)
+        onId(R.id.signUpAddPhoto).hasText(R.string.change_photo)
     }
 }
