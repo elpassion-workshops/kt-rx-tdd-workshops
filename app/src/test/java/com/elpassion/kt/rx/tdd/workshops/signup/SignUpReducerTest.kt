@@ -99,15 +99,26 @@ class SignUpReducerTest {
     fun shouldShowPhotoAfterTakingPhotoAndPermissionsGranted() {
         events.accept(Photo.TakePhotoEvent)
         permissionSubject.onSuccess(true)
-        cameraSubject.onSuccess("uri")
-        state.assertLastValueThat { photoState == Photo.State.Captured("uri") }
+        assert(cameraSubject.hasObservers())
+//        cameraSubject.onSuccess("uri")
+//        state.assertLastValueThat { photoState == Photo.State.Captured("uri") }
+    }
+
+    @Test
+    fun shouldShowPhotoFromCameraAfterTakingPhotoAndPermissionsGranted(){
+        events.accept(Photo.TakePhotoEvent)
+        permissionSubject.onSuccess(true)
+        val uri = "uri"
+        cameraSubject.onSuccess(uri)
+        state.assertLastValueThat {
+            photoState == Photo.State.Captured("uri") }
     }
 }
 
 class SignUpReducer(private val loginValidationApi: (String) -> Single<Boolean>,
                     private val cameraApi: () -> Single<String>,
-                    private val permission: () -> Single<Boolean>
-) : Reducer<SignUp.State> {
+                    private val permission: () -> Single<Boolean>) : Reducer<SignUp.State> {
+
     override fun invoke(events: Events): Observable<SignUp.State> {
         return Observables.combineLatest(loginValidationReducer(events), photoReducer(), SignUp::State)
     }
