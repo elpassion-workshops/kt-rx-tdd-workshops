@@ -6,12 +6,16 @@ import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
+import io.reactivex.Observable.just
+import io.reactivex.Single
+import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer().invoke(events).test()
+    private val loginApiSubject = SingleSubject.create<Boolean>()
+    private val state = SignUpReducer({ loginApiSubject }).invoke(events).test()
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -29,17 +33,27 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent(""))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
     }
+
+
+    @Test
+    fun shouldLoginValidationStateBeAvailableWhenLoginIsAvailable() {
+        events.accept(LoginValidation.LoginChangedEvent("login"))
+        loginApiSubject.onSuccess(true)
+        state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
+    }
 }
 
-class SignUpReducer : Reducer<SignUp.State> {
+class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .map { event ->
+                .switchMap { event ->
                     if (event.login.isEmpty()) {
-                        LoginValidation.State.IDLE
+                        just(LoginValidation.State.IDLE)
                     } else {
-                        LoginValidation.State.IN_PROGRESS
+                        loginApi().map { LoginValidation.State.AVAILABLE }
+                                .toObservable()
+                                .startWith(LoginValidation.State.IN_PROGRESS)
                     }
                 }
                 .startWith(LoginValidation.State.IDLE)
@@ -56,6 +70,7 @@ interface SignUp {
         enum class State {
             IDLE,
             IN_PROGRESS,
+            AVAILABLE,
         }
     }
 }
