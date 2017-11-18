@@ -7,6 +7,7 @@ import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Maybe
 import io.reactivex.Observable
@@ -83,6 +84,10 @@ class SignUpReducerTest {
         verify(camera).invoke()
     }
 
+    @Test
+    fun shouldNotCallCameraBeforeEmittingEvent() {
+        verify(camera, times(0)).invoke()
+    }
 
     private fun validatePassedLoginString(login: String, validated: Boolean, requiredState: LoginValidation.State) {
         events.accept(LoginValidation.LoginChangedEvent(login))
@@ -115,8 +120,12 @@ class SignUpReducer(val api: (String) -> Single<Boolean>, val camera: () -> Mayb
     }
 
     private fun photoValidationReducer(events: Events): Observable<PhotoValidation.State> {
-        camera.invoke()
-        return Observable.just(PhotoValidation.State.EMPTY)
+        return events
+                .ofType(PhotoValidation.PhotoEvent::class.java)
+                .flatMapMaybe<PhotoValidation.State> {
+                    camera.invoke().map { PhotoValidation.State.RETURNED(it) }
+                }
+                .startWith(PhotoValidation.State.EMPTY)
     }
 
 }
@@ -142,6 +151,7 @@ interface SignUp {
 
         sealed class State {
             object EMPTY : State()
+            data class RETURNED(val path: String) : State()
         }
     }
 }
