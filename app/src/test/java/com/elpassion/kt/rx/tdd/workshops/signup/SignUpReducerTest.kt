@@ -23,11 +23,21 @@ class SignUpReducerTest {
         events.accept(LoginValidation.LoginChangedEvent("a"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
+
+    @Test
+    fun shouldLoginValidationStateBeIdleAfterErasingLogin() {
+        events.accept(LoginValidation.LoginChangedEvent(""))
+
+        state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
+
+    }
 }
 
 class SignUpReducer : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
-        return events.map { LoginValidation.State.IN_PROGRESS }
+        return events
+                .ofType(LoginValidation.LoginChangedEvent::class.java)
+                .map {if (it.login.isEmpty()) LoginValidation.State.IDLE else LoginValidation.State.IN_PROGRESS }
                 .startWith(LoginValidation.State.IDLE)
                 .map(SignUp::State)
     }
