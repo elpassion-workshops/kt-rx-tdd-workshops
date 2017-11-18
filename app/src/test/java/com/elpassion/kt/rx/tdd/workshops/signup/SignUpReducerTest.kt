@@ -44,8 +44,8 @@ class SignUpReducerTest {
 class SignUpReducer(val api: () -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events.ofType(LoginValidation.LoginChangedEvent::class.java)
-                .switchMap {
-                    if (it.login.isEmpty()) {
+                .switchMap { (login) ->
+                    if (login.isEmpty()) {
                         Observable.just(LoginValidation.State.IDLE)
                     } else {
                         api.invoke()
