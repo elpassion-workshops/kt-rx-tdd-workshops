@@ -5,13 +5,19 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.whenever
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val state = SignUpReducer().invoke(events).test()
+    private val loginApi: LoginApi = mock()
+    private val state = SignUpReducer(loginApi).invoke(events).test()
+
 
     @Test
     fun shouldLoginValidationStateBeIdleOnStart() {
@@ -20,6 +26,7 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeInProgressAfterUserTypeLogin() {
+        whenever(loginApi.checkLogin()).thenReturn(Single.never())
         events.accept(LoginValidation.LoginChangedEvent("a"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
@@ -27,19 +34,35 @@ class SignUpReducerTest {
     @Test
     fun shouldLoginValidationStateBeIdleAfterErasingLogin() {
         events.accept(LoginValidation.LoginChangedEvent(""))
-
         state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
+    }
 
+    @Test
+    fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
+        whenever(loginApi.checkLogin()).thenReturn(Single.just(true))
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
     }
 }
 
-class SignUpReducer : Reducer<SignUp.State> {
+class SignUpReducer(val api: LoginApi) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
                 .ofType(LoginValidation.LoginChangedEvent::class.java)
-                .map {if (it.login.isEmpty()) LoginValidation.State.IDLE else LoginValidation.State.IN_PROGRESS }
+                .switchMap {
+                    if (it.login.isEmpty()) {
+                        Observable.just(LoginValidation.State.IDLE)
+                    } else {
+                        api.checkLogin()
+                                .map {
+                                    LoginValidation.State.AVAILABLE
+                                }
+                                .toObservable()
+                                .startWith(LoginValidation.State.IN_PROGRESS)
+                    }
+                }
                 .startWith(LoginValidation.State.IDLE)
-                .map(SignUp::State)
+                .map { State(it) }
     }
 }
 
@@ -52,6 +75,11 @@ interface SignUp {
         enum class State {
             IDLE,
             IN_PROGRESS,
+            AVAILABLE
         }
     }
+}
+
+interface LoginApi {
+    fun checkLogin(): Single<Boolean>
 }
