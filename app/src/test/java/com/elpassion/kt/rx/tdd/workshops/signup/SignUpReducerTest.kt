@@ -9,6 +9,7 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
 import io.reactivex.Observable
+import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
@@ -69,11 +70,24 @@ class SignUpReducerTest {
         state.assertLastValueThat { loginValidation == LoginValidation.State.APIFAIL }
     }
 
+    @Test
+    fun shouldPhotoStateBeEmptyAtTheBegging() {
+        state.assertLastValueThat { photoState == SignUp.Photo.State.Empty }
+    }
+
 
 }
 
 class SignUpReducer(val api: (login: String) -> SingleSubject<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
+        return Observables.combineLatest(loginChangedEvents(events), takePhotoEvents(), SignUp::State)
+    }
+
+    private fun takePhotoEvents(): Observable<Photo.State> {
+        return Observable.just(Photo.State.Empty)
+    }
+
+    private fun loginChangedEvents(events: Events): Observable<LoginValidation.State> {
         return events.ofType(LoginValidation.LoginChangedEvent::class.java)
                 .switchMap { (login) ->
                     if (login.isEmpty()) {
@@ -90,13 +104,21 @@ class SignUpReducer(val api: (login: String) -> SingleSubject<Boolean>) : Reduce
                     }
                 }
                 .startWith(LoginValidation.State.IDLE)
-                .map(SignUp::State)
     }
 
 }
 
+
 interface SignUp {
-    data class State(val loginValidation: LoginValidation.State)
+
+    interface Photo{
+        sealed class State {
+            object Empty : State()
+        }
+    }
+
+
+    data class State(val loginValidation: LoginValidation.State,val photoState :Photo.State)
 
     interface LoginValidation {
         data class LoginChangedEvent(val login: String)
