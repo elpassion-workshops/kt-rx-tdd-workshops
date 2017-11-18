@@ -19,4 +19,9 @@ class SignUpActivityTest {
     fun shouldHaveLoginInput() {
         onId(R.id.loginInput).isDisplayed()
     }
+
+    @Test
+    fun shouldShowIdleLoginValidationIndicatorOnStart() {
+        onId(R.id.loginIndicator).hasText(R.string.login_indicator_idle)
+    }
 }
