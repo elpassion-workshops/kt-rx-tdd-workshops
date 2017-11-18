@@ -62,6 +62,13 @@ class SignUpReducerTest {
         verify(apiMock).invoke("a")
     }
 
+    @Test
+    fun shouldShowErrorWhenApiReturnsError(){
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        apiSubject.onError(RuntimeException())
+        state.assertLastValueThat { loginValidation == LoginValidation.State.APIFAIL }
+    }
+
 
 }
 
@@ -78,6 +85,7 @@ class SignUpReducer(val api: (login:String) -> SingleSubject<Boolean>) : Reducer
                                     if (it) LoginValidation.State.AVAILABLE
                                     else LoginValidation.State.ISTAKEN
                                 }
+                                .onErrorReturn { LoginValidation.State.APIFAIL }
                                 .startWith(LoginValidation.State.IN_PROGRESS)
                     }
                 }
@@ -97,7 +105,8 @@ interface SignUp {
             IDLE,
             IN_PROGRESS,
             AVAILABLE,
-            ISTAKEN
+            ISTAKEN,
+            APIFAIL
         }
     }
 }
