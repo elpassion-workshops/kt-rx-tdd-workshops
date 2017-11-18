@@ -41,15 +41,27 @@ class SignUpReducerTest {
         state.assertLastValueThat { loginValidation == LoginValidation.State.LOGIN_AVAILABLE }
     }
 
+    @Test
+    fun shouldLoginValidationStateBeIdleAfterErasingLogin() {
+        events.accept(LoginValidation.LoginChangedEvent("a"))
+        events.accept(LoginValidation.LoginChangedEvent(""))
+        state.assertLastValueThat { loginValidation == LoginValidation.State.IDLE }
+    }
+
 }
 
 class SignUpReducer(private val loginApi: () -> Single<Boolean>) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
         return events
-                .flatMap { callLoginValidationApi() }
+                .ofType(LoginValidation.LoginChangedEvent::class.java)
+                .switchMap {loginChangedEvent -> emptyIsIdle(loginChangedEvent) }
                 .startWith(LoginValidation.State.IDLE)
                 .map(SignUp::State)
     }
+
+    private fun emptyIsIdle(loginChangedEvent: LoginValidation.LoginChangedEvent) =
+            if (loginChangedEvent.login.isEmpty()) Observable.just(LoginValidation.State.IDLE)
+            else callLoginValidationApi()
 
     private fun callLoginValidationApi(): Observable<LoginValidation.State> {
         return loginApi()
