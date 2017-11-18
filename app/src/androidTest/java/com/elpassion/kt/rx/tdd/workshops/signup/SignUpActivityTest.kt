@@ -3,11 +3,10 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import android.support.test.rule.ActivityTestRule
 import com.elpassion.android.commons.espresso.hasText
 import com.elpassion.android.commons.espresso.onId
+import com.elpassion.android.commons.espresso.replaceText
 import com.elpassion.android.commons.espresso.typeText
 import com.elpassion.kt.rx.tdd.workshops.R
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.SingleSubject
 import org.junit.Rule
@@ -18,8 +17,8 @@ class SignUpActivityTest {
 
     private val testScheduler = TestScheduler()
     private val loginApiSubject = SingleSubject.create<Boolean>()
-    private val loginApi = mock<LoginApi>().apply {
-        whenever(checkLogin(any())).thenReturn(loginApiSubject)
+    private val loginApi = mock<LoginApi> {
+        on { checkLogin(any()) } doReturn loginApiSubject
     }
 
     @JvmField
@@ -66,6 +65,15 @@ class SignUpActivityTest {
         enterSampleLoginIntoLoginInputAndAdvanceTime()
         loginApiSubject.onError(Throwable())
         onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.API_ERROR.toString())
+    }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased() {
+        onId(R.id.loginInput).typeText("a")
+        onId(R.id.loginInput).replaceText("")
+        testScheduler.advanceTimeBy(2, TimeUnit.SECONDS)
+        loginApiSubject.onSuccess(false)
+        onId(R.id.loginValidationIndicator).hasText(SignUp.LoginValidation.State.IDLE.toString())
     }
 
     private fun enterSampleLoginIntoLoginInputAndAdvanceTime() {
