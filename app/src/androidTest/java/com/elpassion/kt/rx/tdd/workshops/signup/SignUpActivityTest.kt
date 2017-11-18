@@ -3,6 +3,7 @@ package com.elpassion.kt.rx.tdd.workshops.signup
 import android.support.test.rule.ActivityTestRule
 import com.elpassion.android.commons.espresso.hasText
 import com.elpassion.android.commons.espresso.onId
+import com.elpassion.android.commons.espresso.replaceText
 import com.elpassion.android.commons.espresso.typeText
 import com.elpassion.kt.rx.tdd.workshops.R
 import com.elpassion.kt.rx.tdd.workshops.SignUpDI
@@ -33,7 +34,7 @@ class SignUpActivityTest {
 
     @Test
     fun shouldHaveLoginInput() {
-        onId(R.id.loginInput).typeText("login").hasText("login")
+        onId(R.id.loginInput).replaceText("login").hasText("login")
     }
 
     @Test
@@ -43,28 +44,36 @@ class SignUpActivityTest {
 
     @Test
     fun shouldShowLoadingValidationState(){
-        onId(R.id.loginInput).typeText("login")
+        onId(R.id.loginInput).replaceText("login")
         onId(R.id.indicator).hasText(R.string.loading)
     }
 
     @Test
     fun shouldShowLoginAvailableValidationState() {
-        onId(R.id.loginInput).typeText("a")
+        onId(R.id.loginInput).replaceText("a")
         apiSubject.onSuccess(true)
         onId(R.id.indicator).hasText(R.string.available)
     }
 
     @Test
     fun shouldShowLoginTakenWhenApiReturnsThatItIsTaken() {
-        onId(R.id.loginInput).typeText("a")
+        onId(R.id.loginInput).replaceText("a")
         apiSubject.onSuccess(false)
         onId(R.id.indicator).hasText(R.string.taken)
     }
 
     @Test
     fun shouldShowLoginValidationErrorWhenApiReturnsError() {
-        onId(R.id.loginInput).typeText("a")
+        onId(R.id.loginInput).replaceText("a")
         apiSubject.onError(RuntimeException())
         onId(R.id.indicator).hasText(R.string.error_message)
+    }
+
+    @Test
+    fun shouldShowIdleLoginValidationStateWhenLoginErased() {
+        onId(R.id.loginInput).replaceText("a")
+        apiSubject.onSuccess(true)
+        onId(R.id.loginInput).replaceText("")
+        onId(R.id.indicator).hasText(R.string.idle)
     }
 }

@@ -33,6 +33,9 @@ class SignUpActivity : RxActivity() {
                         SignUp.LoginValidation.State.ERROR -> {
                             indicator.setText(R.string.error_message)
                         }
+                        SignUp.LoginValidation.State.IDLE -> {
+                            indicator.setText(R.string.idle)
+                        }
                     }
                 }
     }
