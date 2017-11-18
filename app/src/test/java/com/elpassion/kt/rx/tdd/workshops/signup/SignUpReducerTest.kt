@@ -5,17 +5,20 @@ import com.elpassion.kt.rx.tdd.workshops.common.Events
 import com.elpassion.kt.rx.tdd.workshops.common.Reducer
 import com.elpassion.kt.rx.tdd.workshops.signup.SignUp.*
 import com.jakewharton.rxrelay2.PublishRelay
+import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.subjects.SingleSubject
 import org.junit.Test
 
 class SignUpReducerTest {
 
     private val events = PublishRelay.create<Any>()
-    private val loginApi: LoginApi = mock()
+    private val loginApiSubject = SingleSubject.create<Boolean>()
+    private val loginApi: LoginApi = mock { on { checkLogin() } doReturn loginApiSubject }
     private val state = SignUpReducer(loginApi).invoke(events).test()
 
 
@@ -26,7 +29,6 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeInProgressAfterUserTypeLogin() {
-        whenever(loginApi.checkLogin()).thenReturn(Single.never())
         events.accept(LoginValidation.LoginChangedEvent("a"))
         state.assertLastValueThat { loginValidation == LoginValidation.State.IN_PROGRESS }
     }
@@ -39,8 +41,8 @@ class SignUpReducerTest {
 
     @Test
     fun shouldLoginValidationStateBeAvailableWhenApiPasses() {
-        whenever(loginApi.checkLogin()).thenReturn(Single.just(true))
         events.accept(LoginValidation.LoginChangedEvent("a"))
+        loginApiSubject.onSuccess(true)
         state.assertLastValueThat { loginValidation == LoginValidation.State.AVAILABLE }
     }
 }
