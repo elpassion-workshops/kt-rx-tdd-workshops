@@ -7,11 +7,9 @@ import io.reactivex.Scheduler
 import io.reactivex.rxkotlin.Observables
 import java.util.concurrent.TimeUnit
 
-class SignUpReducer(val api: LoginApi, val camera: Camera, val system: System, val scheduler: Scheduler) : Reducer<SignUp.State> {
+class SignUpReducer(private val api: LoginApi, private val camera: Camera, private val system: System, private val scheduler: Scheduler) : Reducer<SignUp.State> {
     override fun invoke(events: Events): Observable<SignUp.State> {
-
-        return Observables.combineLatest(loginValidationReducer(events), photoValidationReducer(events))
-                .map { (loginState, photoState) -> SignUp.State(loginState, photoState) }
+        return Observables.combineLatest(loginValidationReducer(events), photoValidationReducer(events), SignUp::State)
     }
 
     private fun loginValidationReducer(events: Events): Observable<SignUp.LoginValidation.State> {
